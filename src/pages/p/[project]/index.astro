@@ -1,0 +1,30 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { chatSlugOf, getProjectChats, getProjects } from '../../../lib/content';
+
+export const getStaticPaths = (async () => {
+  const projects = await getProjects();
+  return projects.map((project) => ({ params: { project: project.id }, props: { project } }));
+}) satisfies GetStaticPaths;
+
+const { project } = Astro.props;
+const chats = await getProjectChats(project.id);
+const { Content } = await render(project);
+---
+
+<BaseLayout title={project.data.title} description={project.data.summary}>
+  <main class="mx-auto max-w-3xl px-4 py-16">
+    <h1 class="text-2xl font-semibold">📁 {project.data.title}</h1>
+    <p class="mt-2 text-fg-muted">{project.data.summary}</p>
+    <div class="prose prose-invert mt-6"><Content /></div>
+
+    <h2 class="mt-10 text-sm text-fg-muted">대화</h2>
+    <ul class="mt-2 space-y-1">
+      {chats.map((chat) => (
+        <li><a class="hover:underline" href={`/p/${project.id}/${chatSlugOf(chat.id)}`}>{chat.data.title}</a></li>
+      ))}
+    </ul>
+  </main>
+</BaseLayout>

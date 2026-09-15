@@ -1,0 +1,25 @@
+---
+// 초기 설정 확인용 임시 홈. 채팅 UI 구현 시 교체합니다.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import site from '../content/site.json';
+import { getChats, getProjects } from '../lib/content';
+
+const projects = await getProjects();
+const chats = await getChats();
+---
+
+<BaseLayout>
+  <main class="mx-auto max-w-3xl px-4 py-16">
+    <h1 class="text-3xl font-semibold">{site.greeting}</h1>
+
+    <h2 class="mt-10 text-sm text-fg-muted">프로젝트</h2>
+    <ul class="mt-2 space-y-1">
+      {projects.map((p) => <li><a class="hover:underline" href={`/p/${p.id}`}>📁 {p.data.title}</a></li>)}
+    </ul>
+
+    <h2 class="mt-8 text-sm text-fg-muted">채팅</h2>
+    <ul class="mt-2 space-y-1">
+      {chats.map((c) => <li><a class="hover:underline" href={`/c/${c.id}`}>{c.data.title}</a></li>)}
+    </ul>
+  </main>
+</BaseLayout>
