@@ -1,6 +1,7 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
 import ChatInput from '../components/ChatInput.astro';
+import HeroIntro from '../components/HeroIntro.astro';
 import site from '../content/site.json';
 import { chatHref, firstQuestion, getProjects, getSuggestedChats, projectOf } from '../lib/content';
 
@@ -15,6 +16,8 @@ const cards = suggestions.slice(0, 4).map((chat) => ({
 ---
 
 <AppLayout>
+  <HeroIntro text={site.hero.text} />
+
   <main class="flex flex-1 flex-col items-center justify-center px-4 pb-[14vh]">
     <div class="w-full max-w-3xl">
       <h1 class="text-center text-[1.75rem] font-medium tracking-tight">{site.greeting}</h1>

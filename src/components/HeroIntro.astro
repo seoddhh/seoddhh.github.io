@@ -1,0 +1,89 @@
+---
+// 홈 첫 진입 인트로. BaseLayout head 스크립트가 html[data-hero]를 설정했을 때만 보입니다.
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+---
+
+<div class="hero-intro" data-hero-intro data-text={text} aria-hidden="true">
+  <div class="hero-intro__fallback">{text}</div>
+  <canvas class="hero-intro__canvas"></canvas>
+  <p class="hero-intro__hint" data-hero-hint>화면을 클릭하거나 아무 키나 누르세요</p>
+</div>
+
+<script>
+  import { createHeroRenderer, cubicBezier } from '../lib/hero-intro';
+
+  const REVEAL_DURATION = 1600;
+  // SEED motion: easing. 중앙의 작은 구멍에서 천천히 시작해 바깥으로 퍼집니다.
+  const ease = cubicBezier(0.35, 0, 0.35, 1);
+
+  const root = document.documentElement;
+  const overlay = document.querySelector<HTMLElement>('[data-hero-intro]');
+
+  if (overlay && root.dataset.hero === 'pending') play(overlay);
+
+  function play(overlay: HTMLElement) {
+    const canvas = overlay.querySelector('canvas');
+    const hint = overlay.querySelector('[data-hero-hint]');
+    const renderer = canvas ? createHeroRenderer(canvas, overlay.dataset.text ?? '') : null;
+    const controller = new AbortController();
+    const { signal } = controller;
+    let started = false;
+
+    if (renderer) {
+      renderer.draw(0, 0);
+      root.dataset.hero = 'gl';
+    }
+
+    const finish = () => {
+      if (signal.aborted) return;
+      controller.abort();
+      try {
+        sessionStorage.setItem('hero-seen', '1');
+      } catch {}
+      renderer?.dispose();
+      overlay.remove();
+      delete root.dataset.hero;
+    };
+
+    // 사용자 입력(클릭, 키)이 있을 때만 연출을 시작합니다. 입력이 없으면 인트로에 머뭅니다.
+    const start = () => {
+      if (started) return;
+      started = true;
+      hint?.setAttribute('data-hidden', '');
+
+      // WebGL을 쓸 수 없으면 흰 화면을 페이드아웃합니다.
+      if (!renderer) {
+        overlay
+          .animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: 'cubic-bezier(0.35, 0, 1, 1)' })
+          .finished.then(finish);
+        return;
+      }
+
+      const begin = performance.now();
+      const frame = (now: number) => {
+        if (signal.aborted) return;
+        const elapsed = now - begin;
+        const t = Math.min(elapsed / REVEAL_DURATION, 1);
+        renderer.draw(ease(t), elapsed / 1000);
+        if (t < 1) requestAnimationFrame(frame);
+        else finish();
+      };
+      requestAnimationFrame(frame);
+    };
+
+    overlay.addEventListener('click', start, { signal });
+    window.addEventListener('keydown', (event) => (event.key === 'Escape' ? finish() : start()), { signal });
+    window.addEventListener(
+      'resize',
+      () => {
+        renderer?.resize();
+        if (!started) renderer?.draw(0, 0);
+      },
+      { signal },
+    );
+  }
+</script>
