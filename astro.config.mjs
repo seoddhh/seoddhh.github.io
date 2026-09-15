@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { unified } from '@astrojs/markdown-remark';
 import remarkDirective from 'remark-directive';
 import remarkChatTurns from './src/lib/remark-chat-turns.mjs';
+import monoDark from './src/lib/shiki-mono-dark.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -19,7 +20,7 @@ export default defineConfig({
       remarkPlugins: [remarkDirective, remarkChatTurns],
     }),
     shikiConfig: {
-      theme: 'github-dark',
+      theme: monoDark,
     },
   },
 });
