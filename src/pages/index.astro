@@ -1,25 +1,41 @@
 ---
-// 초기 설정 확인용 임시 홈. 채팅 UI 구현 시 교체합니다.
-import BaseLayout from '../layouts/BaseLayout.astro';
+import AppLayout from '../layouts/AppLayout.astro';
+import ChatInput from '../components/ChatInput.astro';
 import site from '../content/site.json';
-import { getChats, getProjects } from '../lib/content';
+import { chatHref, firstQuestion, getProjects, getSuggestedChats, projectOf } from '../lib/content';
 
-const projects = await getProjects();
-const chats = await getChats();
+const [suggestions, projects] = await Promise.all([getSuggestedChats(), getProjects()]);
+const projectTitles = new Map(projects.map((project) => [project.id, project.data.title]));
+
+const cards = suggestions.slice(0, 4).map((chat) => ({
+  href: `${chatHref(chat)}#m-1`,
+  question: firstQuestion(chat.body) || chat.data.title,
+  source: chat.collection === 'projectChats' ? projectTitles.get(projectOf(chat.id)) : '채팅',
+}));
 ---
 
-<BaseLayout>
-  <main class="mx-auto max-w-3xl px-4 py-16">
-    <h1 class="text-3xl font-semibold">{site.greeting}</h1>
+<AppLayout>
+  <main class="flex flex-1 flex-col items-center justify-center px-4 pb-[14vh]">
+    <div class="w-full max-w-3xl">
+      <h1 class="text-center text-[1.75rem] font-medium tracking-tight">{site.greeting}</h1>
+      <p class="mt-2 text-center text-fg-muted">{site.hero.title}</p>
 
-    <h2 class="mt-10 text-sm text-fg-muted">프로젝트</h2>
-    <ul class="mt-2 space-y-1">
-      {projects.map((p) => <li><a class="hover:underline" href={`/p/${p.id}`}>📁 {p.data.title}</a></li>)}
-    </ul>
+      <div class="mt-8">
+        <ChatInput placeholder={site.inputPlaceholder} />
+      </div>
 
-    <h2 class="mt-8 text-sm text-fg-muted">채팅</h2>
-    <ul class="mt-2 space-y-1">
-      {chats.map((c) => <li><a class="hover:underline" href={`/c/${c.id}`}>{c.data.title}</a></li>)}
-    </ul>
+      {cards.length > 0 && (
+        <ul class="mt-4 grid gap-2 sm:grid-cols-2">
+          {cards.map((card) => (
+            <li>
+              <a href={card.href} class="block h-full rounded-2xl border border-border px-4 py-3 hover:bg-hover" data-pressable>
+                <span class="line-clamp-2 block text-sm">{card.question}</span>
+                {card.source && <span class="mt-1 block truncate text-xs text-fg-subtle">{card.source}</span>}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   </main>
-</BaseLayout>
+</AppLayout>

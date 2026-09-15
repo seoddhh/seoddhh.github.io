@@ -1,8 +1,10 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { chatSlugOf, getProjectChats, getProjects } from '../../../lib/content';
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ChatInput from '../../../components/ChatInput.astro';
+import Icon from '../../../components/Icon.astro';
+import { chatHref, firstQuestion, getProjectChats, getProjects } from '../../../lib/content';
 
 export const getStaticPaths = (async () => {
   const projects = await getProjects();
@@ -10,21 +12,85 @@ export const getStaticPaths = (async () => {
 }) satisfies GetStaticPaths;
 
 const { project } = Astro.props;
+const { title, summary, period, role, tags, links } = project.data;
 const chats = await getProjectChats(project.id);
 const { Content } = await render(project);
+const hasBody = Boolean(project.body?.trim());
 ---
 
-<BaseLayout title={project.data.title} description={project.data.summary}>
-  <main class="mx-auto max-w-3xl px-4 py-16">
-    <h1 class="text-2xl font-semibold">📁 {project.data.title}</h1>
-    <p class="mt-2 text-fg-muted">{project.data.summary}</p>
-    <div class="prose prose-invert mt-6"><Content /></div>
+<AppLayout title={title} description={summary}>
+  <main class="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-16 md:pt-12">
+    <div class="flex items-center gap-3">
+      <span class="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-fg-muted">
+        <Icon name="folder" />
+      </span>
+      <h1 class="min-w-0 text-2xl font-semibold tracking-tight">{title}</h1>
+    </div>
 
-    <h2 class="mt-10 text-sm text-fg-muted">대화</h2>
-    <ul class="mt-2 space-y-1">
-      {chats.map((chat) => (
-        <li><a class="hover:underline" href={`/p/${project.id}/${chatSlugOf(chat.id)}`}>{chat.data.title}</a></li>
-      ))}
-    </ul>
+    <p class="mt-4 leading-relaxed text-fg-muted">{summary}</p>
+
+    {(period || role) && (
+      <dl class="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+        {period && (
+          <div class="flex gap-2">
+            <dt class="text-fg-subtle">기간</dt>
+            <dd>{period}</dd>
+          </div>
+        )}
+        {role && (
+          <div class="flex gap-2">
+            <dt class="text-fg-subtle">역할</dt>
+            <dd>{role}</dd>
+          </div>
+        )}
+      </dl>
+    )}
+
+    {(tags.length > 0 || links.github || links.demo) && (
+      <div class="mt-4 flex flex-wrap items-center gap-1.5">
+        {tags.map((tag) => <span class="chip">{tag}</span>)}
+        {links.github && (
+          <a href={links.github} target="_blank" rel="noopener" class="chip gap-1.5 hover:bg-hover hover:text-fg" data-pressable>
+            <Icon name="github" size={14} />
+            <span>GitHub</span>
+          </a>
+        )}
+        {links.demo && (
+          <a href={links.demo} target="_blank" rel="noopener" class="chip gap-1.5 hover:bg-hover hover:text-fg" data-pressable>
+            <Icon name="external-link" size={14} />
+            <span>Demo</span>
+          </a>
+        )}
+      </div>
+    )}
+
+    {hasBody && (
+      <div class="prose prose-invert prose-chat mt-6 max-w-none">
+        <Content />
+      </div>
+    )}
+
+    <div class="mt-8">
+      <ChatInput placeholder={`${title}에 대해 물어보세요`} />
+    </div>
+
+    <h2 class="mt-10 px-1 text-xs font-medium text-fg-subtle">대화 {chats.length}</h2>
+    {chats.length === 0 ? (
+      <p class="mt-3 px-1 text-sm text-fg-subtle">아직 대화가 없습니다</p>
+    ) : (
+      <ul class="mt-2 space-y-px">
+        {chats.map((chat) => (
+          <li>
+            <a href={chatHref(chat)} class="-mx-3 flex items-center gap-4 rounded-xl px-3 py-3 hover:bg-hover" data-pressable>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate font-medium">{chat.data.title}</span>
+                <span class="mt-0.5 block truncate text-sm text-fg-muted">{firstQuestion(chat.body)}</span>
+              </span>
+              <Icon name="chevron-right" size={16} class="text-fg-subtle" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
   </main>
-</BaseLayout>
+</AppLayout>

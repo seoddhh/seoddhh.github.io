@@ -1,25 +1,57 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { chatSlugOf, getProjectChats, projectOf } from '../../../lib/content';
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ChatComposer from '../../../components/ChatComposer.astro';
+import Icon from '../../../components/Icon.astro';
+import { chatHref, chatSlugOf, getProjectChats, getProjects, projectOf } from '../../../lib/content';
 
 export const getStaticPaths = (async () => {
-  const chats = await getProjectChats();
-  return chats.map((chat) => ({
-    params: { project: projectOf(chat.id), chat: chatSlugOf(chat.id) },
-    props: { chat },
-  }));
+  const [projects, chats] = await Promise.all([getProjects(), getProjectChats()]);
+  const projectById = new Map(projects.map((project) => [project.id, project]));
+
+  return chats.flatMap((chat) => {
+    const project = projectById.get(projectOf(chat.id));
+    if (!project) return [];
+    return [{ params: { project: project.id, chat: chatSlugOf(chat.id) }, props: { chat, project } }];
+  });
 }) satisfies GetStaticPaths;
 
-const { chat } = Astro.props;
+const { chat, project } = Astro.props;
 const { Content } = await render(chat);
+
+const siblings = await getProjectChats(project.id);
+const next = siblings[siblings.findIndex((sibling) => sibling.id === chat.id) + 1];
 ---
 
-<BaseLayout title={chat.data.title}>
-  <main class="mx-auto max-w-3xl px-4 py-16">
-    <article class="prose prose-invert max-w-none">
+<AppLayout title={`${chat.data.title} · ${project.data.title}`} description={project.data.summary}>
+  <nav slot="header" class="flex min-w-0 items-center gap-1.5 text-sm" aria-label="경로">
+    <a href={`/p/${project.id}`} class="truncate text-fg-muted transition-colors duration-150 ease-easing hover:text-fg">
+      {project.data.title}
+    </a>
+    <span class="text-fg-subtle" aria-hidden="true">/</span>
+    <span class="truncate">{chat.data.title}</span>
+  </nav>
+
+  <main class="mx-auto w-full max-w-3xl flex-1 px-4 pt-2 pb-8">
+    <article class="prose prose-invert prose-chat max-w-none">
       <Content />
     </article>
+
+    {next && (
+      <a
+        href={chatHref(next)}
+        class="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-border px-4 py-3 hover:bg-hover"
+        data-pressable
+      >
+        <span class="min-w-0">
+          <span class="block text-xs text-fg-subtle">다음 대화</span>
+          <span class="block truncate text-sm">{next.data.title}</span>
+        </span>
+        <Icon name="arrow-right" size={16} class="text-fg-muted" />
+      </a>
+    )}
   </main>
-</BaseLayout>
+
+  <ChatComposer placeholder={`${project.data.title}에 대해 물어보세요`} />
+</AppLayout>

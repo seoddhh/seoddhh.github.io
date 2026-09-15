@@ -1,7 +1,8 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AppLayout from '../../layouts/AppLayout.astro';
+import ChatComposer from '../../components/ChatComposer.astro';
 import { getChats } from '../../lib/content';
 
 export const getStaticPaths = (async () => {
@@ -13,10 +14,14 @@ const { chat } = Astro.props;
 const { Content } = await render(chat);
 ---
 
-<BaseLayout title={chat.data.title}>
-  <main class="mx-auto max-w-3xl px-4 py-16">
-    <article class="prose prose-invert max-w-none">
+<AppLayout title={chat.data.title}>
+  <p slot="header" class="truncate text-sm">{chat.data.title}</p>
+
+  <main class="mx-auto w-full max-w-3xl flex-1 px-4 pt-2 pb-8">
+    <article class="prose prose-invert prose-chat max-w-none">
       <Content />
     </article>
   </main>
-</BaseLayout>
+
+  <ChatComposer />
+</AppLayout>
