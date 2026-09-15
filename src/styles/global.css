@@ -1,47 +1,405 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* ChatGPT 웹 다크 톤 기반 디자인 토큰 */
 @theme {
+  /* 그레이스케일 단색 팔레트. 강조 색 없이 명도와 반전으로 위계를 표현합니다. */
   --color-bg: #212121;
   --color-sidebar: #181818;
-  --color-surface: #303030;
-  --color-surface-hover: #3a3a3a;
+  --color-elevated: #262626;
+  --color-surface: #2f2f2f;
+  --color-code: #171717;
+  --color-hover: rgb(255 255 255 / 0.06);
+  --color-active: rgb(255 255 255 / 0.1);
   --color-fg: #ececec;
-  --color-fg-muted: #a1a1a1;
+  --color-fg-muted: #a3a3a3;
+  --color-fg-subtle: #737373;
   --color-border: rgb(255 255 255 / 0.1);
-  --color-accent: #3b82f6;
+  --color-inverse: #ececec;
+  --color-inverse-fg: #171717;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* SEED Design motion: timing function */
+  --ease-linear: cubic-bezier(0, 0, 1, 1);
+  --ease-easing: cubic-bezier(0.35, 0, 0.35, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.15, 1);
+  --ease-exit: cubic-bezier(0.35, 0, 1, 1);
+  --ease-enter-expressive: cubic-bezier(0.03, 0.4, 0.1, 1);
+  --ease-exit-expressive: cubic-bezier(0.35, 0, 0.95, 0.55);
+  --ease-pressed-scale: cubic-bezier(0, 0, 0.15, 1);
+}
+
+:root {
+  /* SEED Design motion: duration. 200ms 이하는 마이크로, 초과는 매크로 모션 */
+  --duration-d1: 50ms;
+  --duration-d2: 100ms;
+  --duration-d3: 150ms;
+  --duration-d4: 200ms;
+  --duration-d5: 250ms;
+  --duration-d6: 300ms;
+  --duration-color-transition: 150ms;
+  --duration-pressed-scale: 150ms;
+
+  --sidebar-width: 260px;
 }
 
 @layer base {
   html {
     color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-bg text-fg font-sans antialiased;
+    @apply bg-bg font-sans text-fg antialiased;
+  }
+
+  ::selection {
+    background-color: rgb(255 255 255 / 0.2);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-fg);
+    outline-offset: 2px;
   }
 }
 
-/* 채팅 턴 (remark-chat-turns.mjs 출력) */
 @layer components {
+  .icon-button {
+    @apply inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-fg-muted;
+  }
+
+  .nav-item {
+    @apply flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm text-fg;
+  }
+
+  .nav-label {
+    @apply mt-5 mb-1 px-2.5 text-xs font-medium text-fg-subtle;
+  }
+
+  .chip {
+    @apply inline-flex h-6 items-center rounded-full border border-border px-2.5 text-xs text-fg-muted;
+  }
+
+  @media (hover: hover) {
+    .icon-button:hover {
+      background-color: var(--color-hover);
+      color: var(--color-fg);
+    }
+
+    .nav-item:hover {
+      background-color: var(--color-hover);
+    }
+  }
+
+  .nav-item[aria-current="page"] {
+    background-color: var(--color-active);
+  }
+
+  .nav-item:focus-visible,
+  .icon-button:focus-visible {
+    outline-offset: -2px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * 아래 규칙은 유틸리티(typography 플러그인 포함)보다 우선해야 하므로 레이어 밖에 둡니다.
+ * ------------------------------------------------------------------------- */
+
+/* 채팅 본문 (Tailwind typography 색상을 단색 토큰으로 교체) */
+.prose-chat {
+    --tw-prose-invert-body: var(--color-fg);
+    --tw-prose-invert-headings: var(--color-fg);
+    --tw-prose-invert-lead: var(--color-fg-muted);
+    --tw-prose-invert-links: var(--color-fg);
+    --tw-prose-invert-bold: var(--color-fg);
+    --tw-prose-invert-counters: var(--color-fg-muted);
+    --tw-prose-invert-bullets: var(--color-fg-subtle);
+    --tw-prose-invert-hr: var(--color-border);
+    --tw-prose-invert-quotes: var(--color-fg-muted);
+    --tw-prose-invert-quote-borders: var(--color-border);
+    --tw-prose-invert-captions: var(--color-fg-subtle);
+    --tw-prose-invert-code: var(--color-fg);
+    --tw-prose-invert-pre-code: var(--color-fg);
+    --tw-prose-invert-pre-bg: var(--color-code);
+    --tw-prose-invert-th-borders: var(--color-border);
+    --tw-prose-invert-td-borders: var(--color-border);
+    line-height: 1.75;
+  }
+
+  .prose-chat .astro-code {
+    background-color: var(--color-code) !important;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .prose-chat :where(code):not(:where(pre code)) {
+    background-color: var(--color-surface);
+    border-radius: 0.375rem;
+    padding: 0.15em 0.4em;
+    font-weight: 400;
+  }
+
+  .prose-chat :where(code):not(:where(pre code))::before,
+  .prose-chat :where(code):not(:where(pre code))::after {
+    content: none;
+  }
+
+  /* 채팅 턴 (remark-chat-turns.mjs 출력) */
   .chat-turn {
-    @apply my-6 scroll-mt-20;
+    scroll-margin-top: 4.5rem;
   }
 
   .chat-turn--user {
-    @apply ml-auto w-fit max-w-[80%] rounded-3xl bg-surface px-5 py-2.5;
+    margin: 2rem 0 1.5rem auto;
+    width: fit-content;
+    max-width: min(80%, 36rem);
+    border-radius: 1.5rem;
+    background-color: var(--color-surface);
+    padding: 0.625rem 1.25rem;
   }
 
-  .chat-turn--user > :first-child {
-    @apply mt-0;
+  .chat-turn--assistant {
+    margin-block: 1.5rem 2.5rem;
   }
 
-  .chat-turn--user > :last-child {
-    @apply mb-0;
+  .chat-turn > :first-child {
+    margin-top: 0;
+  }
+
+  .chat-turn > :last-child {
+    margin-bottom: 0;
+  }
+
+/* 눌림 피드백 (SEED feedback/scale): 크기와 무관하게 약 2px 축소. --press-scale은 스크립트가 계산 */
+[data-pressable] {
+  transition:
+    transform var(--duration-pressed-scale) var(--ease-pressed-scale),
+    background-color var(--duration-color-transition) var(--ease-easing),
+    color var(--duration-color-transition) var(--ease-easing);
+}
+
+[data-pressable]:active {
+  transform: scale(var(--press-scale, 0.96));
+}
+
+/* 사이드바: 모바일은 드로어, 데스크톱은 고정 + 접기 */
+.sidebar {
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  z-index: 40;
+  width: var(--sidebar-width);
+  transform: translateX(-100%);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background-color: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  pointer-events: none;
+}
+
+html[data-drawer="open"] .sidebar {
+  transform: none;
+}
+
+html[data-drawer="open"] .sidebar-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 첫 페인트 이후에만 트랜지션을 켜서 새로고침 시 사이드바가 움직이지 않게 합니다. */
+html[data-motion="ready"] .sidebar {
+  transition: transform var(--duration-d5) var(--ease-exit);
+}
+
+html[data-motion="ready"][data-drawer="open"] .sidebar {
+  transition-duration: var(--duration-d6);
+  transition-timing-function: var(--ease-enter);
+}
+
+html[data-motion="ready"] .sidebar-backdrop {
+  transition: opacity var(--duration-d5) var(--ease-easing);
+}
+
+.app-main {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+[data-show="collapsed"] {
+  display: none;
+}
+
+[data-project-list]:not([data-expanded]) > [data-overflow] {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  html[data-drawer="open"] body {
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 768px) {
+  .sidebar {
+    transform: none;
+  }
+
+  .sidebar-backdrop {
+    display: none;
+  }
+
+  .app-main {
+    padding-left: var(--sidebar-width);
+  }
+
+  html[data-sidebar="collapsed"] .sidebar {
+    transform: translateX(-100%);
+  }
+
+  html[data-sidebar="collapsed"] .app-main {
+    padding-left: 0;
+  }
+
+  html[data-motion="ready"] .sidebar {
+    transition: transform var(--duration-d5) var(--ease-easing);
+  }
+
+  html[data-motion="ready"] .app-main {
+    transition: padding-left var(--duration-d5) var(--ease-easing);
+  }
+
+  [data-show="mobile-or-collapsed"] {
+    display: none;
+  }
+
+  html[data-sidebar="collapsed"] [data-show="collapsed"],
+  html[data-sidebar="collapsed"] [data-show="mobile-or-collapsed"] {
+    display: inline-flex;
+  }
+}
+
+/* 프로필 모달: 데스크톱은 중앙 다이얼로그, 모바일은 바텀시트 */
+.profile-dialog {
+  margin: auto;
+  width: min(100% - 2rem, 32rem);
+  max-width: none;
+  max-height: min(85dvh, 44rem);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.profile-dialog::backdrop {
+  background-color: rgb(0 0 0 / 0.6);
+}
+
+.profile-dialog[open] {
+  animation: dialog-enter var(--duration-d6) var(--ease-enter);
+}
+
+.profile-dialog[open]::backdrop {
+  animation: fade-in var(--duration-d6) var(--ease-enter);
+}
+
+.profile-dialog[data-state="closing"] {
+  animation: dialog-exit var(--duration-d4) var(--ease-exit) forwards;
+}
+
+.profile-dialog[data-state="closing"]::backdrop {
+  animation: fade-out var(--duration-d4) var(--ease-exit) forwards;
+}
+
+.dialog-panel {
+  max-height: inherit;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background-color: var(--color-elevated);
+}
+
+@media (max-width: 639px) {
+  .profile-dialog {
+    margin: auto 0 0;
+    width: 100%;
+    max-height: 90dvh;
+  }
+
+  .profile-dialog[open] {
+    animation-name: sheet-enter;
+  }
+
+  .profile-dialog[data-state="closing"] {
+    animation-name: sheet-exit;
+  }
+
+  .dialog-panel {
+    border-bottom: 0;
+    border-radius: 1rem 1rem 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes dialog-exit {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@keyframes sheet-enter {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-exit {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::backdrop {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  /* 모션 감소 설정에서는 축소 대신 색상 변화로만 눌림을 표현합니다. */
+  [data-pressable]:active {
+    transform: none;
   }
 }

@@ -1,0 +1,131 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import ProfileDialog from '../components/ProfileDialog.astro';
+import Sidebar from '../components/Sidebar.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <Sidebar />
+  <div class="sidebar-backdrop" data-sidebar-close aria-hidden="true"></div>
+
+  <div class="app-main">
+    <header class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-1 bg-bg/90 px-2 backdrop-blur-md">
+      <button type="button" class="icon-button md:hidden" aria-label="사이드바 열기" data-sidebar-toggle data-pressable>
+        <Icon name="menu" />
+      </button>
+      <button type="button" class="icon-button" aria-label="사이드바 열기" data-show="collapsed" data-sidebar-toggle data-pressable>
+        <Icon name="panel-left" />
+      </button>
+      <a href="/" class="icon-button" aria-label="새 채팅" data-show="mobile-or-collapsed" data-pressable>
+        <Icon name="square-pen" />
+      </a>
+      <div class="min-w-0 flex-1 px-1.5">
+        <slot name="header" />
+      </div>
+    </header>
+
+    <slot />
+  </div>
+
+  <ProfileDialog />
+</BaseLayout>
+
+<script>
+  const root = document.documentElement;
+  const desktop = window.matchMedia('(min-width: 768px)');
+  const dialog = document.querySelector<HTMLDialogElement>('#profile-dialog');
+
+  const setDrawer = (open: boolean) => {
+    root.dataset.drawer = open ? 'open' : 'closed';
+  };
+
+  const toggleSidebar = () => {
+    if (!desktop.matches) {
+      setDrawer(root.dataset.drawer !== 'open');
+      return;
+    }
+    const next = root.dataset.sidebar === 'collapsed' ? 'expanded' : 'collapsed';
+    root.dataset.sidebar = next;
+    try {
+      localStorage.setItem('sidebar', next);
+    } catch {}
+  };
+
+  const openProfile = (section: string | null) => {
+    if (!dialog) return;
+    setDrawer(false);
+    delete dialog.dataset.state;
+    dialog.showModal();
+    const target = section ? dialog.querySelector(`#profile-${section}`) : null;
+    target?.scrollIntoView({ block: 'start' });
+  };
+
+  const finishClose = () => {
+    if (!dialog || dialog.dataset.state !== 'closing') return;
+    dialog.removeEventListener('animationend', finishClose);
+    dialog.close();
+    delete dialog.dataset.state;
+  };
+
+  const closeProfile = () => {
+    if (!dialog?.open || dialog.dataset.state === 'closing') return;
+    dialog.dataset.state = 'closing';
+    dialog.addEventListener('animationend', finishClose);
+    // animationend가 오지 않는 환경을 위한 안전장치
+    window.setTimeout(finishClose, 300);
+  };
+
+  document.addEventListener('click', (event) => {
+    const target = event.target as Element;
+    if (target.closest('[data-sidebar-toggle]')) toggleSidebar();
+    if (target.closest('[data-sidebar-close]')) setDrawer(false);
+    if (target.closest('[data-dialog-close]')) closeProfile();
+
+    const profileTrigger = target.closest('[data-profile-open]');
+    if (profileTrigger) openProfile(profileTrigger.getAttribute('data-profile-open'));
+
+    const moreButton = target.closest<HTMLButtonElement>('[data-projects-more]');
+    if (moreButton) {
+      const list = moreButton.closest('[data-project-list]');
+      const expanded = list?.toggleAttribute('data-expanded') ?? false;
+      moreButton.setAttribute('aria-expanded', String(expanded));
+      moreButton.textContent = expanded ? '접기' : '더 보기';
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && root.dataset.drawer === 'open') setDrawer(false);
+  });
+
+  dialog?.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeProfile();
+  });
+
+  dialog?.addEventListener('click', (event) => {
+    if (event.target === dialog) closeProfile();
+  });
+
+  desktop.addEventListener('change', () => setDrawer(false));
+
+  // SEED feedback/scale: basis = max(높이, 너비 / 4, 24), scale = (basis - 2) / basis
+  document.addEventListener('pointerdown', (event) => {
+    const element = (event.target as Element).closest<HTMLElement>('[data-pressable]');
+    if (!element) return;
+    const { width, height } = element.getBoundingClientRect();
+    const basis = Math.max(height, width / 4, 24);
+    element.style.setProperty('--press-scale', String((basis - 2) / basis));
+  });
+
+  requestAnimationFrame(() => {
+    root.dataset.motion = 'ready';
+  });
+</script>

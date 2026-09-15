@@ -1,0 +1,126 @@
+---
+import Icon from './Icon.astro';
+import site from '../content/site.json';
+import { getChats, getProfile, getProjects } from '../lib/content';
+
+const PROJECT_PREVIEW_COUNT = 5;
+
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
+const [projects, chats, profile] = await Promise.all([getProjects(), getChats(), getProfile()]);
+
+const currentIf = (active: boolean) => (active ? 'page' : undefined);
+const isProjectActive = (id: string) => pathname === `/p/${id}` || pathname.startsWith(`/p/${id}/`);
+const activeProjectIndex = projects.findIndex((project) => isProjectActive(project.id));
+const startExpanded = activeProjectIndex >= PROJECT_PREVIEW_COUNT;
+
+const name = profile?.data.name ?? site.name;
+---
+
+<aside id="sidebar" class="sidebar flex flex-col bg-sidebar" aria-label="사이드바">
+  <div class="flex h-14 shrink-0 items-center justify-between pr-2 pl-3">
+    <a href="/" class="rounded-lg px-2 py-1 text-[15px] font-semibold tracking-tight" data-pressable>{site.name}</a>
+    <button type="button" class="icon-button max-md:hidden" aria-label="사이드바 닫기" data-sidebar-toggle data-pressable>
+      <Icon name="panel-left" />
+    </button>
+    <button type="button" class="icon-button md:hidden" aria-label="사이드바 닫기" data-sidebar-close data-pressable>
+      <Icon name="x" />
+    </button>
+  </div>
+
+  <nav class="flex-1 overflow-y-auto px-2 pb-4" aria-label="대화 목록">
+    <ul class="space-y-px">
+      <li>
+        <a href="/" class="nav-item" aria-current={currentIf(pathname === '/')} data-pressable>
+          <Icon name="square-pen" size={18} />
+          <span>새 채팅</span>
+        </a>
+      </li>
+      {profile && (
+        <li>
+          <button type="button" class="nav-item" data-profile-open="about" data-pressable>
+            <Icon name="user" size={18} />
+            <span>소개</span>
+          </button>
+        </li>
+      )}
+      {profile && profile.data.stack.length > 0 && (
+        <li>
+          <button type="button" class="nav-item" data-profile-open="stack" data-pressable>
+            <Icon name="layers" size={18} />
+            <span>기술 스택</span>
+          </button>
+        </li>
+      )}
+      {profile?.data.resume && (
+        <li>
+          <a href={profile.data.resume} target="_blank" rel="noopener" class="nav-item" data-pressable>
+            <Icon name="file-text" size={18} />
+            <span>이력서</span>
+          </a>
+        </li>
+      )}
+    </ul>
+
+    <h2 class="nav-label">프로젝트</h2>
+    {projects.length === 0 ? (
+      <p class="px-2.5 py-1.5 text-sm text-fg-subtle">아직 프로젝트가 없습니다</p>
+    ) : (
+      <ul class="space-y-px" data-project-list data-expanded={startExpanded ? '' : undefined}>
+        {projects.map((project, index) => (
+          <li data-overflow={index >= PROJECT_PREVIEW_COUNT ? '' : undefined}>
+            <a
+              href={`/p/${project.id}`}
+              class="nav-item"
+              aria-current={currentIf(isProjectActive(project.id))}
+              title={project.data.summary}
+              data-pressable
+            >
+              <Icon name="folder" size={18} />
+              <span class="truncate">{project.data.title}</span>
+            </a>
+          </li>
+        ))}
+        {projects.length > PROJECT_PREVIEW_COUNT && (
+          <li>
+            <button
+              type="button"
+              class="nav-item text-fg-muted"
+              aria-expanded={startExpanded ? 'true' : 'false'}
+              data-projects-more
+              data-pressable
+            >{startExpanded ? '접기' : '더 보기'}</button>
+          </li>
+        )}
+      </ul>
+    )}
+
+    <h2 class="nav-label">채팅</h2>
+    {chats.length === 0 ? (
+      <p class="px-2.5 py-1.5 text-sm text-fg-subtle">아직 대화가 없습니다</p>
+    ) : (
+      <ul class="space-y-px">
+        {chats.map((chat) => (
+          <li>
+            <a href={`/c/${chat.id}`} class="nav-item" aria-current={currentIf(pathname === `/c/${chat.id}`)} data-pressable>
+              <span class="truncate">{chat.data.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </nav>
+
+  {profile && (
+    <div class="shrink-0 border-t border-border p-2">
+      <button type="button" class="nav-item h-auto py-2" data-profile-open="about" data-pressable>
+        <span class="grid size-8 shrink-0 place-items-center rounded-full bg-inverse text-sm font-semibold text-inverse-fg">
+          {name.slice(0, 1)}
+        </span>
+        <span class="min-w-0">
+          <span class="block truncate text-sm">{name}</span>
+          <span class="block truncate text-xs text-fg-muted">{profile.data.title}</span>
+        </span>
+      </button>
+    </div>
+  )}
+</aside>

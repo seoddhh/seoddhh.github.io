@@ -1,0 +1,16 @@
+---
+import ChatInput from './ChatInput.astro';
+
+interface Props {
+  placeholder?: string;
+}
+
+const { placeholder } = Astro.props;
+---
+
+<div class="sticky bottom-0 z-10 bg-linear-to-t from-bg from-70% to-transparent px-4 pt-6 pb-3">
+  <div class="mx-auto max-w-3xl">
+    <ChatInput placeholder={placeholder} />
+    <p class="mt-2 text-center text-xs text-fg-subtle">모든 답변은 작성자가 직접 작성한 내용입니다.</p>
+  </div>
+</div>

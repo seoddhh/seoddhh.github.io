@@ -1,0 +1,63 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  placeholder?: string;
+}
+
+const { placeholder = '무엇이든 물어보세요' } = Astro.props;
+---
+
+<form
+  class="flex items-end gap-2 rounded-[1.75rem] border border-border bg-surface py-2 pr-2 pl-5 transition-colors duration-150 ease-easing focus-within:border-white/20"
+  data-chat-input
+>
+  <textarea
+    name="q"
+    rows="1"
+    placeholder={placeholder}
+    aria-label="질문 입력"
+    class="max-h-52 min-h-10 flex-1 resize-none bg-transparent py-2 text-base leading-6 text-fg outline-none placeholder:text-fg-subtle"
+  ></textarea>
+  <button
+    type="submit"
+    class="grid size-9 shrink-0 place-items-center rounded-full bg-inverse text-inverse-fg disabled:bg-white/10 disabled:text-fg-subtle"
+    aria-label="보내기"
+    disabled
+    data-pressable
+  >
+    <Icon name="arrow-up" size={18} />
+  </button>
+</form>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('[data-chat-input]').forEach((form) => {
+    const field = form.querySelector('textarea');
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (!field || !submit) return;
+
+    const sync = () => {
+      field.style.height = 'auto';
+      field.style.height = `${field.scrollHeight}px`;
+      submit.disabled = field.value.trim() === '';
+    };
+
+    field.addEventListener('input', sync);
+
+    field.addEventListener('keydown', (event) => {
+      // 한글 조합 중 Enter는 전송하지 않습니다.
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const question = field.value.trim();
+      if (!question) return;
+      // 추천 질문 자동완성(3.8) 구현 시 이 이벤트를 받아 처리합니다.
+      form.dispatchEvent(new CustomEvent('chat:ask', { detail: question, bubbles: true }));
+    });
+  });
+</script>

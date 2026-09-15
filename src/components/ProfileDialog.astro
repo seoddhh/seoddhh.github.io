@@ -1,0 +1,81 @@
+---
+import { render } from 'astro:content';
+import Icon from './Icon.astro';
+import { getProfile } from '../lib/content';
+
+const profile = await getProfile();
+const rendered = profile ? await render(profile) : undefined;
+const Content = rendered?.Content;
+const contact = profile?.data.contact;
+---
+
+{profile && Content && (
+  <dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-dialog-title">
+    <div class="dialog-panel">
+      <div class="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-elevated pr-2 pl-5">
+        <h2 id="profile-dialog-title" class="text-[15px] font-semibold">프로필</h2>
+        <button type="button" class="icon-button" aria-label="닫기" data-dialog-close data-pressable>
+          <Icon name="x" />
+        </button>
+      </div>
+
+      <section id="profile-about" class="scroll-mt-16 px-5 pt-6">
+        <div class="flex items-center gap-4">
+          <span class="grid size-14 shrink-0 place-items-center rounded-full bg-inverse text-xl font-semibold text-inverse-fg">
+            {profile.data.name.slice(0, 1)}
+          </span>
+          <div class="min-w-0">
+            <p class="truncate text-lg font-semibold tracking-tight">{profile.data.name}</p>
+            <p class="truncate text-sm text-fg-muted">{profile.data.title}</p>
+          </div>
+        </div>
+        <p class="mt-4 leading-relaxed text-fg">{profile.data.bio}</p>
+      </section>
+
+      {profile.data.stack.length > 0 && (
+        <section id="profile-stack" class="scroll-mt-16 px-5 pt-7">
+          <h3 class="text-xs font-medium text-fg-subtle">기술 스택</h3>
+          <ul class="mt-2.5 flex flex-wrap gap-1.5">
+            {profile.data.stack.map((item) => <li class="chip">{item}</li>)}
+          </ul>
+        </section>
+      )}
+
+      {(contact?.email || contact?.github || contact?.linkedin) && (
+        <section id="profile-contact" class="scroll-mt-16 px-5 pt-7">
+          <h3 class="text-xs font-medium text-fg-subtle">연락처</h3>
+          <ul class="mt-1.5 -mx-2.5 space-y-px">
+            {contact.email && (
+              <li>
+                <a href={`mailto:${contact.email}`} class="nav-item" data-pressable>
+                  <Icon name="mail" size={18} class="text-fg-muted" />
+                  <span class="truncate">{contact.email}</span>
+                </a>
+              </li>
+            )}
+            {contact.github && (
+              <li>
+                <a href={contact.github} target="_blank" rel="noopener" class="nav-item" data-pressable>
+                  <Icon name="github" size={18} class="text-fg-muted" />
+                  <span class="truncate">{contact.github.replace(/^https?:\/\//, '')}</span>
+                </a>
+              </li>
+            )}
+            {contact.linkedin && (
+              <li>
+                <a href={contact.linkedin} target="_blank" rel="noopener" class="nav-item" data-pressable>
+                  <Icon name="external-link" size={18} class="text-fg-muted" />
+                  <span class="truncate">LinkedIn</span>
+                </a>
+              </li>
+            )}
+          </ul>
+        </section>
+      )}
+
+      <div class="prose prose-sm prose-invert prose-chat max-w-none px-5 pt-7 pb-8">
+        <Content />
+      </div>
+    </div>
+  </dialog>
+)}

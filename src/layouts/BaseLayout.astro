@@ -21,6 +21,15 @@ const pageTitle = title ? `${title} · ${site.name}` : site.name;
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <meta name="theme-color" content="#212121" />
+    <script is:inline>
+      // 첫 페인트 전에 데스크톱 사이드바 접힘 상태를 복원합니다.
+      try {
+        if (localStorage.getItem('sidebar') === 'collapsed') {
+          document.documentElement.dataset.sidebar = 'collapsed';
+        }
+      } catch {}
+    </script>
   </head>
   <body class="min-h-dvh">
     <slot />
