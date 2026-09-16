@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
 import AppLayout from '../../../layouts/AppLayout.astro';
 import ChatComposer from '../../../components/ChatComposer.astro';
+import ChatStream from '../../../components/ChatStream.astro';
 import Icon from '../../../components/Icon.astro';
 import { chatHref, chatSlugOf, getProjectChats, getProjects, projectOf } from '../../../lib/content';
 
@@ -34,9 +35,9 @@ const next = siblings[siblings.findIndex((sibling) => sibling.id === chat.id) + 
   </nav>
 
   <main class="mx-auto w-full max-w-3xl flex-1 px-4 pt-2 pb-8">
-    <article class="prose prose-invert prose-chat max-w-none">
+    <ChatStream id={chat.id}>
       <Content />
-    </article>
+    </ChatStream>
 
     {next && (
       <a
