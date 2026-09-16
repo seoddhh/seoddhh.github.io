@@ -4,8 +4,7 @@ import { render } from 'astro:content';
 import AppLayout from '../../../layouts/AppLayout.astro';
 import ChatComposer from '../../../components/ChatComposer.astro';
 import ChatStream from '../../../components/ChatStream.astro';
-import Icon from '../../../components/Icon.astro';
-import { chatHref, chatSlugOf, getProjectChats, getProjects, projectOf } from '../../../lib/content';
+import { chatSlugOf, getProjectChats, getProjects, projectOf } from '../../../lib/content';
 
 export const getStaticPaths = (async () => {
   const [projects, chats] = await Promise.all([getProjects(), getProjectChats()]);
@@ -20,9 +19,6 @@ export const getStaticPaths = (async () => {
 
 const { chat, project } = Astro.props;
 const { Content } = await render(chat);
-
-const siblings = await getProjectChats(project.id);
-const next = siblings[siblings.findIndex((sibling) => sibling.id === chat.id) + 1];
 ---
 
 <AppLayout title={`${chat.data.title} · ${project.data.title}`} description={project.data.summary}>
@@ -38,20 +34,6 @@ const next = siblings[siblings.findIndex((sibling) => sibling.id === chat.id) + 
     <ChatStream id={chat.id}>
       <Content />
     </ChatStream>
-
-    {next && (
-      <a
-        href={chatHref(next)}
-        class="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-border px-4 py-3 hover:bg-hover"
-        data-pressable
-      >
-        <span class="min-w-0">
-          <span class="block text-xs text-fg-subtle">다음 대화</span>
-          <span class="block truncate text-sm">{next.data.title}</span>
-        </span>
-        <Icon name="arrow-right" size={16} class="text-fg-muted" />
-      </a>
-    )}
   </main>
 
   <ChatComposer placeholder={`${project.data.title}에 대해 물어보세요`} />
