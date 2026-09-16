@@ -2,16 +2,40 @@
 import AppLayout from '../layouts/AppLayout.astro';
 import ChatInput from '../components/ChatInput.astro';
 import HeroIntro from '../components/HeroIntro.astro';
+import Icon, { type IconName } from '../components/Icon.astro';
 import site from '../content/site.json';
-import { chatHref, firstQuestion, getProjects, getSuggestedChats, projectOf } from '../lib/content';
+import { chatHref, firstQuestion, getChats, getProjectChats, getProjects, projectOf } from '../lib/content';
 
-const [suggestions, projects] = await Promise.all([getSuggestedChats(), getProjects()]);
+const CARD_LIMIT = 8;
+
+// 태그로 카드 아이콘을 고릅니다. 없으면 기본 아이콘을 씁니다.
+const ICONS: Record<string, IconName> = {
+  overview: 'compass',
+  architecture: 'workflow',
+  embedding: 'database',
+  design: 'layers',
+};
+
+const iconOf = (tags: string[]): IconName => tags.map((tag) => ICONS[tag]).find(Boolean) ?? 'file-text';
+
+const [projects, projectChats, chats] = await Promise.all([getProjects(), getProjectChats(), getChats()]);
 const projectTitles = new Map(projects.map((project) => [project.id, project.data.title]));
+const projectOrder = new Map(projects.map((project, index) => [project.id, index]));
 
-const cards = suggestions.slice(0, 4).map((chat) => ({
+// 프로젝트 대화를 먼저(프로젝트 순서 → 대화 순서), 그다음 추천한 단독 글을 놓습니다.
+const ordered = [
+  ...projectChats.sort(
+    (a, b) => (projectOrder.get(projectOf(a.id)) ?? 99) - (projectOrder.get(projectOf(b.id)) ?? 99),
+  ),
+  ...chats.filter((chat) => chat.data.suggested),
+];
+
+const cards = ordered.slice(0, CARD_LIMIT).map((chat) => ({
+  // `#m-1` 로 들어가면 첫 질문부터 답변이 스트리밍됩니다.
   href: `${chatHref(chat)}#m-1`,
   question: firstQuestion(chat.body) || chat.data.title,
-  source: chat.collection === 'projectChats' ? projectTitles.get(projectOf(chat.id)) : '채팅',
+  source: chat.collection === 'projectChats' ? (projectTitles.get(projectOf(chat.id)) ?? '프로젝트') : '기술 글',
+  icon: iconOf(chat.data.tags),
 }));
 ---
 
@@ -28,16 +52,26 @@ const cards = suggestions.slice(0, 4).map((chat) => ({
       </div>
 
       {cards.length > 0 && (
-        <ul class="mt-4 grid gap-2 sm:grid-cols-2">
-          {cards.map((card) => (
-            <li>
-              <a href={card.href} class="block h-full rounded-2xl border border-border px-4 py-3 hover:bg-hover" data-pressable>
-                <span class="line-clamp-2 block text-sm">{card.question}</span>
-                {card.source && <span class="mt-1 block truncate text-xs text-fg-subtle">{card.source}</span>}
-              </a>
-            </li>
-          ))}
-        </ul>
+        <section class="mt-8">
+          <h2 class="px-1 text-xs font-medium text-fg-subtle">질문으로 바로 시작하기</h2>
+          <ul class="card-rail mt-3">
+            {cards.map((card) => (
+              <li>
+                <a
+                  href={card.href}
+                  class="flex h-full flex-col rounded-2xl border border-border p-4 hover:bg-hover"
+                  data-pressable
+                >
+                  <span class="grid size-9 place-items-center rounded-xl border border-border text-fg-muted">
+                    <Icon name={card.icon} size={18} />
+                  </span>
+                  <span class="mt-4 block truncate text-xs text-fg-subtle">{card.source}</span>
+                  <span class="mt-1 line-clamp-3 block text-sm leading-snug">{card.question}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   </main>

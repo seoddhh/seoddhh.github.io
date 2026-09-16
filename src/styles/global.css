@@ -82,6 +82,20 @@
     @apply inline-flex h-6 items-center rounded-full border border-border px-2.5 text-xs text-fg-muted;
   }
 
+  /* 홈 카드 레일: 가로로 스크롤하는 질문 카드 목록 */
+  .card-rail {
+    @apply -mx-1 flex snap-x snap-proximity gap-2 overflow-x-auto px-1 pb-1;
+    scrollbar-width: none;
+  }
+
+  .card-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .card-rail > li {
+    @apply w-56 shrink-0 snap-start;
+  }
+
   @media (hover: hover) {
     .icon-button:hover {
       background-color: var(--color-hover);
