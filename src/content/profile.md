@@ -1,5 +1,5 @@
 ---
-name: 이름
+name: 서동휘
 title: AI Engineer
 bio: 한 줄 소개를 작성하세요.
 stack: [Python, FastAPI, LangChain, TypeScript, React]
