@@ -9,7 +9,7 @@ const { placeholder = '무엇이든 물어보세요' } = Astro.props;
 ---
 
 <form
-  class="flex items-end gap-2 rounded-[1.75rem] border border-border bg-surface py-2 pr-2 pl-5 transition-colors duration-150 ease-easing focus-within:border-white/20"
+  class="flex items-end gap-2 rounded-[1.75rem] border border-transparent bg-surface py-2 pr-2 pl-5 shadow-[0_2px_12px_rgb(0_0_0_/_0.05)] transition-[border-color,box-shadow] duration-150 ease-easing focus-within:border-black/10 focus-within:shadow-[0_4px_20px_rgb(0_0_0_/_0.08)]"
   data-chat-input
 >
   <textarea
@@ -21,7 +21,7 @@ const { placeholder = '무엇이든 물어보세요' } = Astro.props;
   ></textarea>
   <button
     type="submit"
-    class="grid size-9 shrink-0 place-items-center rounded-full bg-inverse text-inverse-fg disabled:bg-white/10 disabled:text-fg-subtle"
+    class="grid size-9 shrink-0 place-items-center rounded-full bg-inverse text-inverse-fg disabled:bg-black/10 disabled:text-fg-subtle"
     aria-label="보내기"
     disabled
     data-pressable

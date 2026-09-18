@@ -60,21 +60,21 @@ const FRAGMENT_SHADER = /* glsl */ `
     float distanceFromCenter = length(p);
     float t = uTime * 0.6;
 
-    // 회색 테두리와 흰 영역은 서로 다른 노이즈로 흔들어 경계가 겹치지 않게 합니다.
+    // 회색 테두리와 검은 영역은 서로 다른 노이즈로 흔들어 경계가 겹치지 않게 합니다.
     float rimEdge = distanceFromCenter + (fbm(p * 2.5 - vec2(t * 0.7, t)) - 0.5) * 0.45;
     float coreEdge = distanceFromCenter + (fbm(p * 3.5 + vec2(t, -t)) - 0.5) * 0.35;
     float rimWidth = 0.14;
 
-    // 구멍(투명) → 회색 테두리 → 흰 영역 순서로 중앙에서 바깥으로 배치됩니다.
+    // 구멍(투명) → 회색 테두리 → 검은 영역 순서로 중앙에서 바깥으로 배치됩니다.
     float rim = 1.0 - step(rimEdge, radius);
     float core = 1.0 - step(coreEdge, radius + rimWidth);
     float alpha = rim * (1.0 - smoothstep(0.9, 1.0, uProgress));
 
-    // 글자는 픽셀화하지 않고, 흰 영역 안에서만 보입니다.
+    // 글자는 픽셀화하지 않고, 검은 영역 안에서만 보입니다.
     float text = texture2D(uText, gl_FragCoord.xy / uResolution).a * core;
 
-    vec3 color = mix(vec3(0.45), vec3(1.0), core);
-    color = mix(color, vec3(0.0), text);
+    vec3 color = mix(vec3(0.55), vec3(0.0), core);
+    color = mix(color, vec3(1.0), text);
     gl_FragColor = vec4(color * alpha, alpha);
   }
 `;

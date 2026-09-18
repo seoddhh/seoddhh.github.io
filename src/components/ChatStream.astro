@@ -14,7 +14,7 @@ const { id } = Astro.props;
   document.documentElement.dataset.chatStream = 'armed';
 </script>
 
-<article class="prose prose-invert prose-chat max-w-none" data-chat={id}>
+<article class="prose prose-chat max-w-none" data-chat={id}>
   <slot />
 </article>
 

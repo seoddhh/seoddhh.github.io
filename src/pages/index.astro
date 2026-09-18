@@ -59,7 +59,7 @@ const cards = ordered.slice(0, CARD_LIMIT).map((chat) => ({
               <li>
                 <a
                   href={card.href}
-                  class="flex h-full flex-col rounded-2xl border border-border p-4 hover:bg-hover"
+                  class="flex h-full flex-col rounded-2xl border border-border bg-elevated p-4 transition-[translate,box-shadow] duration-200 ease-easing hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgb(0_0_0_/_0.06)]"
                   data-pressable
                 >
                   <span class="grid size-9 place-items-center rounded-xl border border-border text-fg-muted">
