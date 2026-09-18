@@ -229,39 +229,6 @@ html[data-chat-stream="armed"] [data-chat] .chat-turn,
   animation-delay: 0.3s;
 }
 
-/* 질문 선택지: 방문자가 고른 질문만 답변이 열립니다. */
-.chat-prompts {
-  margin-top: 2rem;
-}
-
-.chat-prompts[hidden] {
-  display: none;
-}
-
-.chat-prompts__label {
-  padding-inline: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-fg-subtle);
-}
-
-.chat-prompt {
-  display: block;
-  width: 100%;
-  border-radius: 1rem;
-  border: 1px solid var(--color-border);
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-@media (hover: hover) {
-  .chat-prompt:hover {
-    background-color: var(--color-hover);
-  }
-}
-
 .chat-skip {
   display: inline-flex;
   height: 2rem;

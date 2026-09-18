@@ -1,5 +1,6 @@
 ---
-// 대화를 질문 단위로 나눠, 방문자가 고른 질문만 답변을 스트리밍합니다 (SPEC 3.6).
+// 대화를 질문 단위로 나눠, 방문자가 보낸 질문만 답변을 스트리밍합니다 (SPEC 3.6).
+// 다음 질문은 입력창에 타이핑되듯 채워지고, Enter를 누르면 답변이 열립니다.
 // HTML은 빌드 시 전부 생성되므로 JS가 없으면 전문이 그대로 보입니다.
 interface Props {
   id: string;
@@ -17,11 +18,6 @@ const { id } = Astro.props;
   <slot />
 </article>
 
-<div class="chat-prompts" data-chat-prompts hidden>
-  <p class="chat-prompts__label" data-prompts-label></p>
-  <ul class="mt-2 space-y-1.5"></ul>
-</div>
-
 <div class="mt-6 flex justify-center">
   <button type="button" class="chat-skip" data-chat-skip hidden data-pressable>건너뛰기</button>
 </div>
@@ -29,23 +25,27 @@ const { id } = Astro.props;
 <script>
   const root = document.documentElement;
   const article = document.querySelector<HTMLElement>('[data-chat]');
-  const box = document.querySelector<HTMLElement>('[data-chat-prompts]');
-  const label = document.querySelector<HTMLElement>('[data-prompts-label]');
-  const list = box?.querySelector('ul');
+  const form = document.querySelector<HTMLFormElement>('[data-chat-input]');
+  const field = form?.querySelector('textarea');
   const skipButton = document.querySelector<HTMLButtonElement>('[data-chat-skip]');
 
-  if (article && box && label && list && root.dataset.chatStream === 'armed') {
+  if (article && form && field && root.dataset.chatStream === 'armed') {
     // 통째로 페이드인하는 블록. 마크업이 깨져 보이지 않도록 타이핑하지 않습니다.
     const FADE = new Set(['PRE', 'TABLE', 'FIGURE', 'IMG', 'HR']);
     // 항목 단위로 나눠 드러낼 컨테이너
     const SPLIT = new Set(['UL', 'OL']);
     const CHARS_PER_SECOND = 260;
+    // 입력창에 질문을 채우는 속도. 사람이 치는 것처럼 답변보다 느리게 둡니다.
+    const QUESTION_CHAR_MS = 45;
 
     type Item = { el: HTMLElement; typed: boolean; nodes: Text[]; texts: string[] };
     type Answer = { turn: HTMLElement; items: Item[] };
     type Pair = { user: HTMLElement; answers: Answer[]; text: string; opened: boolean };
 
     const instant = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 터치 기기에서 포커스를 주면 가상 키보드가 올라오므로 마우스 환경에서만 포커스합니다.
+    const canFocus = matchMedia('(pointer: fine)').matches;
+    const placeholder = field.placeholder;
     let cancel: (() => void) | null = null;
     let skipping = false;
     let follow = true;
@@ -198,22 +198,48 @@ const { id } = Astro.props;
       }
     };
 
+    // ChatInput이 input 이벤트로 높이와 보내기 버튼 상태를 맞춥니다.
+    const setField = (value: string) => {
+      field.value = value;
+      field.dispatchEvent(new Event('input'));
+    };
+
+    let stopSuggest: (() => void) | null = null;
+    let finishSuggest: (() => void) | null = null;
+
+    // 다음 질문을 입력창에 한 글자씩 채웁니다. 전송은 방문자가 Enter로 합니다.
+    const suggest = (pair: Pair) => {
+      field.disabled = false;
+      field.placeholder = placeholder;
+      if (canFocus) field.focus({ preventScroll: true });
+
+      let index = instant ? pair.text.length : 0;
+      setField(pair.text.slice(0, index));
+      if (index >= pair.text.length) return;
+
+      const timer = window.setInterval(() => {
+        index += 1;
+        setField(pair.text.slice(0, index));
+        if (index >= pair.text.length) finishSuggest?.();
+      }, QUESTION_CHAR_MS);
+
+      stopSuggest = () => {
+        window.clearInterval(timer);
+        stopSuggest = finishSuggest = null;
+      };
+      finishSuggest = () => {
+        stopSuggest?.();
+        setField(pair.text);
+      };
+    };
+
     // 대화 흐름이 끊기지 않도록 다음 차례 질문 하나만 제시합니다.
     const render = () => {
       const next = pairs.find((pair) => !pair.opened);
-      box.hidden = !next;
-      if (!next) return;
-      label.textContent = pairs[0].opened ? '이어서 물어보기' : '무엇이 궁금하신가요?';
-
-      const item = document.createElement('li');
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'chat-prompt';
-      button.dataset.pressable = '';
-      button.textContent = next.text;
-      button.addEventListener('click', () => open(next));
-      item.append(button);
-      list.replaceChildren(item);
+      if (next) return suggest(next);
+      field.disabled = false;
+      field.placeholder = placeholder;
+      setField('');
     };
 
     const open = async (pair: Pair) => {
@@ -225,8 +251,13 @@ const { id } = Astro.props;
         openAll(earlier);
       }
       pair.opened = true;
-      box.hidden = true;
       follow = true;
+
+      // 답변이 끝날 때까지 입력창을 잠급니다.
+      stopSuggest?.();
+      setField('');
+      field.disabled = true;
+      field.placeholder = '답변하는 중…';
 
       if (instant) {
         openAll(pair);
@@ -271,6 +302,17 @@ const { id } = Astro.props;
       skipping = true;
       cancel?.();
     };
+
+    // 입력창에서 보낸 질문이 다음 차례 질문과 같으면 답변을 엽니다.
+    form.addEventListener('chat:ask', (event) => {
+      const question = (event as CustomEvent<string>).detail;
+      const pair = pairs.find((candidate) => !candidate.opened && candidate.text === question);
+      if (pair) open(pair);
+    });
+    // 채우는 도중 키를 누르거나 입력창을 누르면 질문을 끝까지 채웁니다.
+    // capture 단계라 ChatInput의 Enter 전송보다 먼저 실행됩니다.
+    form.addEventListener('keydown', () => finishSuggest?.(), { capture: true });
+    field.addEventListener('pointerdown', () => finishSuggest?.());
 
     skipButton?.addEventListener('click', skip);
     article.addEventListener('click', (event) => {
