@@ -548,6 +548,84 @@ html[data-hero="gl"] .hero-intro__fallback {
   opacity: 0;
 }
 
+/* ---------------------------------------------------------------------------
+   엣지 플래시 (3.5): 대화에 들어오거나 질문을 보낼 때 화면 가장자리가 한 번 번쩍이고 사라집니다.
+   iOS Siri처럼 얇은 링과 넓은 블룸 두 겹을 겹치고, 그라디언트가 도는 동안 페이드아웃합니다.
+   --------------------------------------------------------------------------- */
+@property --edge-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.edge-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.edge-flash[data-play] {
+  animation: edge-flash 1.6s var(--ease-easing) forwards;
+}
+
+.edge-flash__layer {
+  position: absolute;
+  inset: 0;
+  filter: blur(var(--blur));
+}
+
+/* 가장자리만 남기는 마스크: 전체에서 content-box(안쪽)를 뺍니다. */
+.edge-flash__layer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: var(--width);
+  background: conic-gradient(from var(--edge-angle), #5ac8fa, #af52de, #ff2d55, #ff9500, #5ac8fa);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+}
+
+.edge-flash[data-play] .edge-flash__layer::before {
+  animation: edge-spin 1.6s linear;
+}
+
+.edge-flash__layer--ring {
+  --width: 2px;
+  --blur: 3px;
+}
+
+.edge-flash__layer--bloom {
+  --width: 32px;
+  --blur: 48px;
+  opacity: 0.55;
+}
+
+@keyframes edge-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes edge-spin {
+  to {
+    --edge-angle: 240deg;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

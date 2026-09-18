@@ -1,0 +1,29 @@
+---
+// 대화에 들어오거나 질문을 보낼 때 화면 가장자리가 한 번 번쩍이고 사라집니다 (SPEC 3.5).
+// 다시 재생하려면 document 에 `edge-flash` 이벤트를 보냅니다.
+---
+
+<div class="edge-flash" data-edge-flash aria-hidden="true">
+  <div class="edge-flash__layer edge-flash__layer--bloom"></div>
+  <div class="edge-flash__layer edge-flash__layer--ring"></div>
+</div>
+
+<script>
+  const flash = document.querySelector<HTMLElement>('[data-edge-flash]');
+
+  if (flash && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const play = () => {
+      delete flash.dataset.play;
+      void flash.offsetWidth; // 애니메이션을 처음부터 다시 시작합니다.
+      flash.dataset.play = '';
+    };
+
+    flash.addEventListener('animationend', (event) => {
+      if (event.target === flash) delete flash.dataset.play;
+    });
+    document.addEventListener('edge-flash', play);
+
+    // 대화 페이지 진입
+    play();
+  }
+</script>

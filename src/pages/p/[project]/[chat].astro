@@ -4,6 +4,7 @@ import { render } from 'astro:content';
 import AppLayout from '../../../layouts/AppLayout.astro';
 import ChatComposer from '../../../components/ChatComposer.astro';
 import ChatStream from '../../../components/ChatStream.astro';
+import EdgeFlash from '../../../components/EdgeFlash.astro';
 import { chatSlugOf, getProjectChats, getProjects, projectOf } from '../../../lib/content';
 
 export const getStaticPaths = (async () => {
@@ -22,6 +23,7 @@ const { Content } = await render(chat);
 ---
 
 <AppLayout title={`${chat.data.title} · ${project.data.title}`} description={project.data.summary}>
+  <EdgeFlash />
   <nav slot="header" class="flex min-w-0 items-center gap-1.5 text-sm" aria-label="경로">
     <a href={`/p/${project.id}`} class="truncate text-fg-muted transition-colors duration-150 ease-easing hover:text-fg">
       {project.data.title}
