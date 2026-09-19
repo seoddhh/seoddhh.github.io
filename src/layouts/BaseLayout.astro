@@ -30,13 +30,9 @@ const pageTitle = title ? `${title} · ${site.name}` : site.name;
         }
       } catch {}
 
-      // 홈 첫 방문(세션 기준)에만 히어로를 띄웁니다. 모션 감소 설정이면 건너뜁니다.
+      // 홈 첫 방문(세션 기준)에만 랜딩을 띄웁니다. 모션 감소 설정이면 랜딩이 정적인 글로 바뀝니다.
       try {
-        if (
-          location.pathname === '/' &&
-          !sessionStorage.getItem('hero-seen') &&
-          !matchMedia('(prefers-reduced-motion: reduce)').matches
-        ) {
+        if (location.pathname === '/' && !sessionStorage.getItem('hero-seen')) {
           document.documentElement.dataset.hero = 'pending';
         }
       } catch {}

@@ -1,16 +1,156 @@
 ---
-// 홈 첫 진입 인트로. BaseLayout head 스크립트가 html[data-hero]를 설정했을 때만 보입니다.
-interface Props {
-  text: string;
+// 홈 첫 진입 랜딩 (SPEC 3.4). BaseLayout head 스크립트가 html[data-hero]를 설정했을 때만 보입니다.
+// "AI 엔지니어가 되려다 AI가 되어버린 나" 이야기를 스크롤로 넘기고,
+// 끝까지 내린 뒤 아무 곳이나 누르면 WebGL 구멍이 퍼지며 채팅 UI로 진입합니다.
+import Icon, { type IconName } from './Icon.astro';
+
+interface Landing {
+  scrollHint: string;
+  question: string;
+  learned: string;
+  tokenized: string;
+  tokens: string[];
+  became: string;
+  answer: string;
+  guide: string;
+  cards: { icon: string; title: string; body: string }[];
+  enter: string;
 }
 
-const { text } = Astro.props;
+interface Props {
+  text: string;
+  landing: Landing;
+  keywords: string[];
+  stats: { label: string; value: number }[];
+}
+
+const { text, landing, keywords, stats } = Astro.props;
+
+// 장면별 스크롤 구간 [등장 시작, 등장 끝, 퇴장 시작, 퇴장 끝]. 0~1은 랜딩 전체 스크롤 비율입니다.
+const SCENES = {
+  name: [-1, 0, 0.03, 0.07],
+  question: [0.06, 0.1, 0.22, 0.26],
+  learned: [0.25, 0.29, 0.43, 0.47],
+  tokens: [0.46, 0.5, 0.62, 0.66],
+  became: [0.65, 0.69, 0.8, 0.84],
+  guide: [0.83, 0.86, 0.9, 0.93],
+  end: [0.92, 0.96, 2, 3],
+};
+const range = (key: keyof typeof SCENES) => SCENES[key].join(',');
+
+// 토큰 ID는 조각 문자열에서 결정적으로 만듭니다. 빌드마다 같은 값이 나옵니다.
+const tokenId = (piece: string) => {
+  let hash = 2166136261;
+  for (const char of piece) hash = Math.imul(hash ^ char.codePointAt(0)!, 16777619);
+  return (hash >>> 0) % 100000;
+};
+
+// 키워드는 가운데 문구를 피해 황금각 나선으로 흩어 놓습니다.
+const scattered = keywords.map((word, i) => {
+  const angle = i * 2.39996;
+  const ring = i % 4;
+  return {
+    word,
+    x: 50 + Math.cos(angle) * (36 + ring * 3),
+    y: 50 + Math.sin(angle) * (30 + ring * 4),
+    depth: 6 + ring * 6,
+  };
+});
 ---
 
-<div class="hero-intro" data-hero-intro data-text={text} aria-hidden="true">
-  <div class="hero-intro__fallback">{text}</div>
-  <canvas class="hero-intro__canvas"></canvas>
-  <p class="hero-intro__hint" data-hero-hint>화면을 클릭하거나 아무 키나 누르세요</p>
+<div class="hero-intro" data-hero-intro data-text={text}>
+  <div class="hero-intro__fallback" aria-hidden="true"></div>
+  <canvas class="hero-intro__canvas" aria-hidden="true"></canvas>
+
+  <div class="landing" data-landing tabindex="-1">
+    <div class="landing__track">
+      <div class="landing__stage">
+        <section class="landing__scene" data-scene={range('name')} data-active style="--v: 1; --y: 0">
+          <p class="landing__name">{text}</p>
+        </section>
+
+        <section class="landing__scene" data-scene={range('question')}>
+          <div class="landing__column">
+            <p class="landing__bubble" data-type="0,0.85">{landing.question}</p>
+          </div>
+        </section>
+
+        <section class="landing__scene" data-scene={range('learned')}>
+          <ul class="landing__keywords" style={`--n: ${scattered.length}`} aria-label="공부한 기술">
+            {scattered.map((item, i) => (
+              <li
+                class="landing__keyword"
+                style={`--i: ${i}; --kx: ${item.x.toFixed(1)}%; --ky: ${item.y.toFixed(1)}%; --depth: ${item.depth}`}
+              >
+                {item.word}
+              </li>
+            ))}
+          </ul>
+          <div class="landing__column text-center">
+            <h2 class="landing__headline">{landing.learned}</h2>
+            <dl class="landing__stats">
+              {stats.map((stat) => (
+                <div>
+                  <dt>{stat.label}</dt>
+                  <dd data-count={stat.value}>{stat.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        <section class="landing__scene" data-scene={range('tokens')}>
+          <div class="landing__column landing__column--wide text-center">
+            <h2 class="landing__headline">{landing.tokenized}</h2>
+            <p class="landing__tokens" style={`--n: ${landing.tokens.length}`}>
+              {landing.tokens.map((piece, i) => (
+                <span class="landing__token" style={`--i: ${i}`}>
+                  <span class="landing__token-text">{piece}</span>
+                  <span class="landing__token-id" aria-hidden="true">{tokenId(piece)}</span>
+                </span>
+              ))}
+            </p>
+          </div>
+        </section>
+
+        <section class="landing__scene" data-scene={range('became')}>
+          <div class="landing__column">
+            <h2 class="landing__headline text-center">{landing.became}</h2>
+            <div class="landing__answer">
+              <span class="landing__avatar" aria-hidden="true">서</span>
+              <div class="min-w-0 flex-1">
+                <div class="landing__thinking" aria-hidden="true"><span></span><span></span><span></span></div>
+                <p class="landing__answer-text" data-type="0.3,0.95">{landing.answer}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="landing__scene" data-scene={range('guide')}>
+          <div class="landing__column landing__column--wide">
+            <h2 class="landing__headline text-center">{landing.guide}</h2>
+            <ul class="landing__cards">
+              {landing.cards.map((card, i) => (
+                <li class="landing__card" style={`--i: ${i}`}>
+                  <Icon name={card.icon as IconName} size={20} />
+                  <strong>{card.title}</strong>
+                  <span>{card.body}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section class="landing__scene" data-scene={range('end')}>
+          <p class="landing__name landing__name--end" aria-hidden="true">{text}</p>
+          <p class="landing__enter">{landing.enter}</p>
+        </section>
+
+        <p class="landing__scroll-hint" aria-hidden="true">{landing.scrollHint}<span></span></p>
+        <div class="landing__progress" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -19,6 +159,8 @@ const { text } = Astro.props;
   const REVEAL_DURATION = 1600;
   // SEED motion: easing. 중앙의 작은 구멍에서 천천히 시작해 바깥으로 퍼집니다.
   const ease = cubicBezier(0.35, 0, 0.35, 1);
+  // 끝까지 내렸다고 보는 스크롤 비율. 이 전에는 진입할 수 없습니다.
+  const READY_AT = 0.985;
 
   const root = document.documentElement;
   const overlay = document.querySelector<HTMLElement>('[data-hero-intro]');
@@ -26,21 +168,108 @@ const { text } = Astro.props;
   if (overlay && root.dataset.hero === 'pending') play(overlay);
 
   function play(overlay: HTMLElement) {
+    const landing = overlay.querySelector<HTMLElement>('[data-landing]')!;
     const canvas = overlay.querySelector('canvas');
-    const hint = overlay.querySelector('[data-hero-hint]');
-    const renderer = canvas ? createHeroRenderer(canvas, overlay.dataset.text ?? '') : null;
+    // 모션 감소 설정이면 장면을 정적인 글로 늘어놓고, 진입은 페이드로 대신합니다.
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const renderer = canvas && !still ? createHeroRenderer(canvas, overlay.dataset.text ?? '') : null;
     const controller = new AbortController();
     const { signal } = controller;
     let started = false;
+    let ready = false;
+    let endLevel = 0;
 
     if (renderer) {
-      renderer.draw(0, 0);
+      renderer.draw(0, 0, 0);
       root.dataset.hero = 'gl';
     }
+    if (still) overlay.dataset.still = '';
+
+    const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
+    const segment = (p: number, from: number, to: number) => clamp((p - from) / (to - from));
+
+    const scenes = Array.from(overlay.querySelectorAll<HTMLElement>('[data-scene]')).map((el) => ({
+      el,
+      range: el.dataset.scene!.split(',').map(Number),
+    }));
+
+    // 스크롤 위치에 맞춰 한 글자씩 드러내는 문장. 원문은 HTML에 그대로 있어 JS 없이도 읽힙니다.
+    const typers = Array.from(overlay.querySelectorAll<HTMLElement>('[data-type]')).map((el) => {
+      const [from, to] = el.dataset.type!.split(',').map(Number);
+      return { el, from, to, text: el.textContent ?? '', scene: el.closest<HTMLElement>('[data-scene]')! };
+    });
+    const counters = Array.from(overlay.querySelectorAll<HTMLElement>('[data-count]')).map((el) => ({
+      el,
+      value: Number(el.dataset.count),
+      scene: el.closest<HTMLElement>('[data-scene]')!,
+    }));
+
+    const progressOf = new Map<HTMLElement, number>();
+
+    const apply = (p: number) => {
+      overlay.style.setProperty('--p', String(p));
+
+      for (const { el, range } of scenes) {
+        const [a, b, c, d] = range;
+        const enter = segment(p, a, b);
+        const leave = segment(p, c, d);
+        const visible = Math.min(enter, 1 - leave);
+        const t = segment(p, b, c);
+        progressOf.set(el, t);
+        el.style.setProperty('--v', visible.toFixed(3));
+        // 들어올 때는 아래에서, 나갈 때는 위로 빠집니다.
+        el.style.setProperty('--y', (p < b ? 1 - enter : -leave).toFixed(3));
+        el.style.setProperty('--t', t.toFixed(3));
+        el.toggleAttribute('data-active', visible > 0);
+      }
+
+      for (const typer of typers) {
+        const t = segment(progressOf.get(typer.scene) ?? 0, typer.from, typer.to);
+        const count = Math.round(typer.text.length * t);
+        typer.el.textContent = typer.text.slice(0, count);
+        typer.el.toggleAttribute('data-typing', count > 0 && count < typer.text.length);
+      }
+
+      for (const counter of counters) {
+        const t = segment(progressOf.get(counter.scene) ?? 0, 0, 0.6);
+        counter.el.textContent = String(Math.round(counter.value * t));
+      }
+
+      // 마지막 장면에서 캔버스의 이름이 떠오릅니다. 진입 직전 화면을 셰이더 첫 프레임과 맞추기 위해서입니다.
+      endLevel = segment(p, 0.9, 0.97);
+      renderer?.draw(0, 0, endLevel);
+
+      ready = p >= READY_AT;
+      overlay.toggleAttribute('data-ready', ready);
+    };
+
+    // 휠 스크롤이 계단처럼 튀지 않도록 실제 위치를 부드럽게 따라갑니다.
+    let target = 0;
+    let current = 0;
+    let frame = 0;
+
+    const tick = () => {
+      current += (target - current) * 0.16;
+      if (Math.abs(target - current) < 0.0005) current = target;
+      apply(current);
+      frame = current === target ? 0 : requestAnimationFrame(tick);
+    };
+
+    const measure = () => {
+      const max = landing.scrollHeight - landing.clientHeight;
+      target = max > 0 ? landing.scrollTop / max : 1;
+      if (still) {
+        overlay.toggleAttribute('data-ready', target >= READY_AT);
+        ready = target >= READY_AT;
+        return;
+      }
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
 
     const finish = () => {
       if (signal.aborted) return;
       controller.abort();
+      cancelAnimationFrame(frame);
       try {
         sessionStorage.setItem('hero-seen', '1');
       } catch {}
@@ -49,13 +278,13 @@ const { text } = Astro.props;
       delete root.dataset.hero;
     };
 
-    // 사용자 입력(클릭, 키)이 있을 때만 연출을 시작합니다. 입력이 없으면 인트로에 머뭅니다.
     const start = () => {
-      if (started) return;
+      if (started || !ready) return;
       started = true;
-      hint?.setAttribute('data-hidden', '');
+      cancelAnimationFrame(frame);
+      overlay.dataset.leaving = '';
 
-      // WebGL을 쓸 수 없으면 흰 화면을 페이드아웃합니다.
+      // WebGL을 쓸 수 없으면 검은 화면을 페이드아웃합니다.
       if (!renderer) {
         overlay
           .animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: 'cubic-bezier(0.35, 0, 1, 1)' })
@@ -64,26 +293,54 @@ const { text } = Astro.props;
       }
 
       const begin = performance.now();
-      const frame = (now: number) => {
+      const draw = (now: number) => {
         if (signal.aborted) return;
         const elapsed = now - begin;
         const t = Math.min(elapsed / REVEAL_DURATION, 1);
-        renderer.draw(ease(t), elapsed / 1000);
-        if (t < 1) requestAnimationFrame(frame);
+        renderer.draw(ease(t), elapsed / 1000, 1);
+        if (t < 1) requestAnimationFrame(draw);
         else finish();
       };
-      requestAnimationFrame(frame);
+      requestAnimationFrame(draw);
     };
 
+    landing.addEventListener('scroll', measure, { passive: true, signal });
     overlay.addEventListener('click', start, { signal });
-    window.addEventListener('keydown', (event) => (event.key === 'Escape' ? finish() : start()), { signal });
+    window.addEventListener(
+      'keydown',
+      (event) => {
+        if (ready && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          start();
+        }
+      },
+      { signal },
+    );
     window.addEventListener(
       'resize',
       () => {
         renderer?.resize();
-        if (!started) renderer?.draw(0, 0);
+        if (!started) renderer?.draw(0, 0, endLevel);
+        measure();
       },
       { signal },
     );
+
+    // 키워드 구름이 포인터를 따라 깊이별로 살짝 움직입니다.
+    if (!still && matchMedia('(pointer: fine)').matches) {
+      overlay.addEventListener(
+        'pointermove',
+        (event) => {
+          overlay.style.setProperty('--mx', ((event.clientX / window.innerWidth) * 2 - 1).toFixed(3));
+          overlay.style.setProperty('--my', ((event.clientY / window.innerHeight) * 2 - 1).toFixed(3));
+        },
+        { passive: true, signal },
+      );
+    }
+
+    // 방향키·스페이스로 바로 스크롤할 수 있게 포커스를 줍니다.
+    landing.focus({ preventScroll: true });
+    if (still) measure();
+    else apply(0);
   }
 </script>

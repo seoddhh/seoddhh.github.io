@@ -6,5 +6,55 @@
     "title": "AI Engineer · Product-minded"
   },
   "greeting": "무엇이 궁금하신가요?",
-  "inputPlaceholder": "무엇이든 물어보세요"
+  "inputPlaceholder": "무엇이든 물어보세요",
+  "landing": {
+    "scrollHint": "스크롤해서 이야기 보기",
+    "question": "AI 엔지니어가 되고 싶었습니다.",
+    "learned": "그래서 배운 걸 전부 대화로 남겼습니다.",
+    "keywords": [
+      "LLM",
+      "Embedding",
+      "Upstage",
+      "Ollama",
+      "Cloud Run",
+      "Pydantic",
+      "Generator",
+      "Iterator",
+      "GIL",
+      "Astro",
+      "WebGL",
+      "Shiki"
+    ],
+    "tokenized": "배울수록, 저는 조금씩 토큰이 되어 갔습니다.",
+    "tokens": [
+      "AI",
+      " 엔지니어",
+      "가",
+      " 되려던",
+      " 서",
+      "동",
+      "휘"
+    ],
+    "became": "그리고 AI가 되어버렸습니다.",
+    "answer": "안녕하세요, 서동휘입니다. 제가 만든 프로젝트와 공부한 기록은 전부 대화로 남아 있어요. 궁금한 걸 물어보시면 그때 했던 고민을 그대로 답해 드릴게요.",
+    "guide": "이 블로그는 저와 나누는 대화입니다.",
+    "cards": [
+      {
+        "icon": "folder",
+        "title": "프로젝트",
+        "body": "폴더를 열면 아키텍처와 트러블슈팅을 주제별 대화로 설명합니다."
+      },
+      {
+        "icon": "file-text",
+        "title": "채팅",
+        "body": "TIL, 기술 글, 면접 회고를 질문과 답변으로 기록합니다."
+      },
+      {
+        "icon": "user",
+        "title": "프로필",
+        "body": "기술 스택과 이력, 연락처는 왼쪽 아래 프로필에 있습니다."
+      }
+    ],
+    "enter": "아무 곳이나 눌러서 대화 시작하기"
+  }
 }

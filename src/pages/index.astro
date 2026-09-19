@@ -4,7 +4,7 @@ import ChatInput from '../components/ChatInput.astro';
 import HeroIntro from '../components/HeroIntro.astro';
 import Icon, { type IconName } from '../components/Icon.astro';
 import site from '../content/site.json';
-import { chatHref, firstQuestion, getChats, getProjectChats, getProjects, projectOf } from '../lib/content';
+import { chatHref, firstQuestion, getChats, getProfile, getProjectChats, getProjects, projectOf } from '../lib/content';
 
 const CARD_LIMIT = 8;
 
@@ -18,7 +18,12 @@ const ICONS: Record<string, IconName> = {
 
 const iconOf = (tags: string[]): IconName => tags.map((tag) => ICONS[tag]).find(Boolean) ?? 'file-text';
 
-const [projects, projectChats, chats] = await Promise.all([getProjects(), getProjectChats(), getChats()]);
+const [projects, projectChats, chats, profile] = await Promise.all([
+  getProjects(),
+  getProjectChats(),
+  getChats(),
+  getProfile(),
+]);
 const projectTitles = new Map(projects.map((project) => [project.id, project.data.title]));
 const projectOrder = new Map(projects.map((project, index) => [project.id, index]));
 
@@ -37,10 +42,22 @@ const cards = ordered.slice(0, CARD_LIMIT).map((chat) => ({
   source: chat.collection === 'projectChats' ? (projectTitles.get(projectOf(chat.id)) ?? '프로젝트') : '기술 글',
   icon: iconOf(chat.data.tags),
 }));
+// 랜딩 키워드 구름: 기술 스택 + 콘텐츠 태그 중 기술명(대문자로 시작) + 보충 목록. 대소문자 무시하고 중복 제거합니다.
+const keywords = [
+  ...(profile?.data.stack ?? []),
+  ...[...projects, ...projectChats, ...chats].flatMap((entry) => entry.data.tags).filter((tag) => /^[A-Z]/.test(tag)),
+  ...site.landing.keywords,
+].filter((word, i, all) => all.findIndex((other) => other.toLowerCase() === word.toLowerCase()) === i);
+
+const landingStats = [
+  { label: '프로젝트', value: projects.length },
+  { label: '대화', value: projectChats.length + chats.length },
+  { label: '질문', value: [...projectChats, ...chats].reduce((sum, chat) => sum + (chat.body?.match(/^:::user/gm)?.length ?? 0), 0) },
+];
 ---
 
 <AppLayout>
-  <HeroIntro text={site.hero.text} />
+  <HeroIntro text={site.hero.text} landing={site.landing} keywords={keywords.slice(0, 22)} stats={landingStats} />
 
   <main class="flex flex-1 flex-col items-center justify-center px-4 pb-[14vh]">
     <div class="w-full max-w-3xl">

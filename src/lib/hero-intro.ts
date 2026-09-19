@@ -18,6 +18,7 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform float uProgress; // 0: 화면 전체가 흰색, 1: 구멍이 화면 전체로 퍼져 사라짐
   uniform float uTime;
   uniform float uPixel;    // 픽셀화 셀 크기(디바이스 픽셀)
+  uniform float uTextAlpha; // 이름 글자 투명도. 랜딩 마지막 장면에서 0 → 1로 떠오릅니다
   uniform sampler2D uText;
 
   float hash(vec2 p) {
@@ -71,7 +72,7 @@ const FRAGMENT_SHADER = /* glsl */ `
     float alpha = rim * (1.0 - smoothstep(0.9, 1.0, uProgress));
 
     // 글자는 픽셀화하지 않고, 검은 영역 안에서만 보입니다.
-    float text = texture2D(uText, gl_FragCoord.xy / uResolution).a * core;
+    float text = texture2D(uText, gl_FragCoord.xy / uResolution).a * core * uTextAlpha;
 
     vec3 color = mix(vec3(0.55), vec3(0.0), core);
     color = mix(color, vec3(1.0), text);
@@ -81,7 +82,7 @@ const FRAGMENT_SHADER = /* glsl */ `
 
 export interface HeroRenderer {
   resize(): void;
-  draw(progress: number, time: number): void;
+  draw(progress: number, time: number, textAlpha?: number): void;
   dispose(): void;
 }
 
@@ -131,6 +132,7 @@ export function createHeroRenderer(canvas: HTMLCanvasElement, text: string): Her
     time: gl.getUniformLocation(program, 'uTime'),
     pixel: gl.getUniformLocation(program, 'uPixel'),
     text: gl.getUniformLocation(program, 'uText'),
+    textAlpha: gl.getUniformLocation(program, 'uTextAlpha'),
   };
 
   gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
@@ -170,8 +172,9 @@ export function createHeroRenderer(canvas: HTMLCanvasElement, text: string): Her
 
   return {
     resize,
-    draw(progress, time) {
+    draw(progress, time, textAlpha = 1) {
       gl.uniform1f(uniforms.progress, progress);
+      gl.uniform1f(uniforms.textAlpha, textAlpha);
       gl.uniform1f(uniforms.time, time);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
