@@ -43,14 +43,12 @@ const name = profile?.data.name ?? site.name;
           </button>
         </li>
       )}
-      {profile && profile.data.stack.length > 0 && (
-        <li>
-          <button type="button" class="nav-item" data-profile-open="stack" data-pressable>
-            <Icon name="layers" size={18} />
-            <span>기술 스택</span>
-          </button>
-        </li>
-      )}
+      <li>
+        <a href="/library" class="nav-item" aria-current={currentIf(pathname === '/library')} data-pressable>
+          <Icon name="images" size={18} />
+          <span>라이브러리</span>
+        </a>
+      </li>
       {profile?.data.resume && (
         <li>
           <a href={profile.data.resume} target="_blank" rel="noopener" class="nav-item" data-pressable>

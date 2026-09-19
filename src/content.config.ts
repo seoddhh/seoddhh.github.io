@@ -61,6 +61,21 @@ const chats = defineCollection({
   }),
 });
 
+// 라이브러리(자격증·수료증·상장): library/[slug].md + 같은 폴더의 이미지 → /library#[slug]
+const library = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/library' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      kind: z.enum(['자격증', '수료증', '상장']),
+      issuer: z.string(),
+      date: z.coerce.date(),
+      image: image(),
+      alt: z.string().optional(),
+      draft: z.boolean().default(false),
+    }),
+});
+
 // 프로필 패널
 const profile = defineCollection({
   loader: glob({ pattern: 'profile.md', base: './src/content' }),
@@ -81,4 +96,4 @@ const profile = defineCollection({
   }),
 });
 
-export const collections = { projects, projectChats, chats, profile };
+export const collections = { projects, projectChats, chats, library, profile };

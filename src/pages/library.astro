@@ -1,0 +1,254 @@
+---
+// 라이브러리 (SPEC 3.10): 자격증·수료증·상장 이미지를 모아 보고, 누르면 라이트박스로 설명을 봅니다.
+// 원본 다운로드는 제공하지 않습니다.
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import AppLayout from '../layouts/AppLayout.astro';
+import Icon from '../components/Icon.astro';
+import { getLibrary } from '../lib/content';
+
+const KINDS = ['자격증', '수료증', '상장'] as const;
+
+const items = await Promise.all(
+  (await getLibrary()).map(async (item) => ({ ...item, Content: (await render(item)).Content })),
+);
+const kinds = KINDS.filter((kind) => items.some((item) => item.data.kind === kind));
+
+const formatDate = (date: Date) => `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}`;
+---
+
+<AppLayout title="라이브러리" description="자격증, 수료증, 상장을 모아 둔 곳입니다.">
+  <p slot="header" class="truncate text-sm">라이브러리</p>
+
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-16 md:pt-12">
+    <div class="flex items-center gap-3">
+      <span class="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-fg-muted">
+        <Icon name="images" />
+      </span>
+      <h1 class="text-2xl font-semibold tracking-tight">라이브러리</h1>
+    </div>
+    <p class="mt-4 leading-relaxed text-fg-muted">자격증, 수료증, 상장을 모아 둔 곳입니다. 이미지를 누르면 설명을 볼 수 있어요.</p>
+
+    {items.length === 0 ? (
+      <p class="mt-10 text-sm text-fg-subtle">아직 등록된 항목이 없습니다.</p>
+    ) : (
+      <>
+        <div class="mt-8 flex flex-wrap gap-2" role="group" aria-label="종류로 거르기" data-library-filters>
+          <button type="button" class="library-filter" aria-pressed="true" data-filter="" data-pressable>
+            전체 <span>{items.length}</span>
+          </button>
+          {kinds.map((kind) => (
+            <button type="button" class="library-filter" aria-pressed="false" data-filter={kind} data-pressable>
+              {kind} <span>{items.filter((item) => item.data.kind === kind).length}</span>
+            </button>
+          ))}
+        </div>
+
+        <ul class="library-grid mt-5" data-library-grid>
+          {items.map((item) => (
+            <li id={item.id} data-kind={item.data.kind}>
+              <button type="button" class="library-card" data-library-open={item.id} data-pressable>
+                <span class="library-card__frame">
+                  <Image
+                    src={item.data.image}
+                    alt={item.data.alt ?? item.data.title}
+                    widths={[320, 480, 640]}
+                    sizes="(min-width: 768px) 320px, 50vw"
+                    class="library-card__image"
+                    draggable="false"
+                  />
+                </span>
+                <span class="mt-3 block truncate text-sm font-medium">{item.data.title}</span>
+                <span class="mt-0.5 block truncate text-xs text-fg-subtle">
+                  {item.data.kind} · {item.data.issuer} · {formatDate(item.data.date)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+  </main>
+
+  <dialog class="lightbox" aria-label="라이브러리 항목" data-lightbox>
+    <button type="button" class="lightbox__button lightbox__close" aria-label="닫기" data-lightbox-close data-pressable>
+      <Icon name="x" />
+    </button>
+    <button type="button" class="lightbox__button lightbox__prev" aria-label="이전" data-lightbox-step="-1" data-pressable>
+      <Icon name="chevron-left" />
+    </button>
+    <button type="button" class="lightbox__button lightbox__next" aria-label="다음" data-lightbox-step="1" data-pressable>
+      <Icon name="chevron-right" />
+    </button>
+
+    {items.map((item) => (
+      <article class="lightbox__slide" data-slide={item.id} hidden>
+        <div class="lightbox__media">
+          <Image
+            src={item.data.image}
+            alt={item.data.alt ?? item.data.title}
+            widths={[960, 1600]}
+            sizes="min(90vw, 1100px)"
+            class="lightbox__image"
+            loading="lazy"
+            draggable="false"
+          />
+        </div>
+        <div class="lightbox__info">
+          <p class="text-xs text-white/60">
+            {item.data.kind} · {item.data.issuer} · <time datetime={item.data.date.toISOString()}>{formatDate(item.data.date)}</time>
+          </p>
+          <h2 class="mt-1 text-lg font-semibold text-white">{item.data.title}</h2>
+          <div class="lightbox__desc">
+            <item.Content />
+          </div>
+        </div>
+      </article>
+    ))}
+    <p class="lightbox__count" aria-live="polite" data-lightbox-count></p>
+  </dialog>
+</AppLayout>
+
+<script>
+  const grid = document.querySelector<HTMLElement>('[data-library-grid]');
+  const dialog = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+  const counter = document.querySelector<HTMLElement>('[data-lightbox-count]');
+
+  if (grid && dialog && counter) {
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>('li'));
+    const slides = new Map(
+      Array.from(dialog.querySelectorAll<HTMLElement>('[data-slide]')).map((slide) => [slide.dataset.slide!, slide]),
+    );
+    const canTransition = 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let current: string | null = null;
+
+    const transition = (update: () => void) => {
+      if (canTransition) return document.startViewTransition(update);
+      update();
+      return null;
+    };
+
+    // 라이트박스는 거른 결과 안에서만 앞뒤로 넘깁니다.
+    const visibleIds = () => cards.filter((card) => !card.hidden).map((card) => card.id);
+    const thumbOf = (id: string) => grid.querySelector<HTMLElement>(`#${CSS.escape(id)} .library-card__image`);
+    const imageOf = (id: string) => slides.get(id)?.querySelector<HTMLImageElement>('.lightbox__image');
+
+    // 큰 이미지가 준비된 뒤에 전환해야 빈 화면으로 커지지 않습니다. 오래 걸리면 기다리지 않습니다.
+    const prepare = (id: string) => {
+      const image = imageOf(id);
+      if (!image) return Promise.resolve();
+      image.loading = 'eager';
+      return Promise.race([image.decode().catch(() => {}), new Promise((resolve) => setTimeout(resolve, 400))]);
+    };
+
+    const show = (id: string) => {
+      current = id;
+      for (const [slideId, slide] of slides) slide.hidden = slideId !== id;
+      const ids = visibleIds();
+      counter.textContent = `${ids.indexOf(id) + 1} / ${ids.length}`;
+      dialog.toggleAttribute('data-single', ids.length < 2);
+      history.replaceState(null, '', `#${id}`);
+    };
+
+    // 썸네일이 그 자리에서 큰 이미지로 커지도록 같은 view-transition-name을 넘겨줍니다.
+    const open = async (id: string) => {
+      await prepare(id);
+      const thumb = thumbOf(id);
+      const image = imageOf(id);
+      if (thumb) thumb.style.viewTransitionName = 'library-active';
+      transition(() => {
+        if (thumb) thumb.style.viewTransitionName = '';
+        if (image) image.style.viewTransitionName = 'library-active';
+        show(id);
+        dialog.showModal();
+      });
+    };
+
+    const close = () => {
+      if (!dialog.open || !current) return;
+      const thumb = thumbOf(current);
+      const image = imageOf(current);
+      const running = transition(() => {
+        if (image) image.style.viewTransitionName = '';
+        if (thumb) thumb.style.viewTransitionName = 'library-active';
+        dialog.close();
+      });
+      // 전환이 끝나면 이름을 돌려놓아야 다음 전환과 겹치지 않습니다.
+      const reset = () => {
+        if (thumb) thumb.style.viewTransitionName = '';
+      };
+      if (running) running.finished.finally(reset);
+      else reset();
+      history.replaceState(null, '', location.pathname);
+      current = null;
+    };
+
+    const step = async (delta: number) => {
+      const ids = visibleIds();
+      if (!current || ids.length < 2) return;
+      const next = ids[(ids.indexOf(current) + delta + ids.length) % ids.length];
+      await prepare(next);
+      dialog.dataset.direction = delta > 0 ? 'next' : 'prev';
+      imageOf(current)!.style.viewTransitionName = '';
+      show(next);
+      imageOf(next)!.style.viewTransitionName = 'library-active';
+    };
+
+    grid.addEventListener('click', (event) => {
+      const button = (event.target as Element).closest<HTMLElement>('[data-library-open]');
+      if (button) open(button.dataset.libraryOpen!);
+    });
+
+    dialog.addEventListener('click', (event) => {
+      const target = event.target as Element;
+      const stepButton = target.closest<HTMLElement>('[data-lightbox-step]');
+      if (stepButton) return step(Number(stepButton.dataset.lightboxStep));
+      // 배경(이미지·설명 밖)이나 닫기 버튼을 누르면 닫습니다.
+      if (target.closest('[data-lightbox-close]') || !target.closest('.lightbox__media, .lightbox__info')) close();
+    });
+
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      close();
+    });
+
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight') step(1);
+      if (event.key === 'ArrowLeft') step(-1);
+    });
+
+    // 모바일: 좌우로 밀어 넘깁니다.
+    let startX = 0;
+    dialog.addEventListener('pointerdown', (event) => (startX = event.clientX), { passive: true });
+    dialog.addEventListener('pointerup', (event) => {
+      const dx = event.clientX - startX;
+      if (event.pointerType !== 'mouse' && Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+    });
+
+    // 이미지 저장을 제공하지 않으므로 우클릭 메뉴와 드래그를 막습니다.
+    document.addEventListener('contextmenu', (event) => {
+      if ((event.target as Element).closest('.library-card__image, .lightbox__image')) event.preventDefault();
+    });
+
+    // 필터: 격자 재배치를 항목별 view-transition-name으로 부드럽게 옮깁니다.
+    // 이름은 이 전환 동안에만 붙입니다. 계속 붙여 두면 라이트박스 전환 때 카드가 배경과 큰 이미지 위로 떠오릅니다.
+    const filters = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    for (const button of filters) {
+      button.addEventListener('click', () => {
+        const kind = button.dataset.filter;
+        if (canTransition) for (const card of cards) card.style.viewTransitionName = `library-${card.id}`;
+        const running = transition(() => {
+          for (const other of filters) other.setAttribute('aria-pressed', String(other === button));
+          for (const card of cards) card.hidden = Boolean(kind) && card.dataset.kind !== kind;
+        });
+        running?.finished.finally(() => {
+          for (const card of cards) card.style.viewTransitionName = '';
+        });
+      });
+    }
+
+    // `/library#sqld` 로 들어오면 그 항목을 바로 엽니다.
+    const initial = decodeURIComponent(location.hash.slice(1));
+    if (slides.has(initial)) open(initial);
+  }
+</script>

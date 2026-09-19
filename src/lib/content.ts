@@ -23,6 +23,11 @@ export async function getChats() {
   return chats.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 
+export async function getLibrary() {
+  const items = await getCollection('library', isPublished);
+  return items.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+}
+
 export async function getProfile() {
   const [profile] = await getCollection('profile');
   return profile;
