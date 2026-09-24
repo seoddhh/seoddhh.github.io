@@ -3,6 +3,7 @@
   "description": "AI 엔지니어 포트폴리오 & 기술블로그",
   "hero": {
     "text": "Seo Dong Hwi",
+    "endText": "Seo-Devlog",
     "title": "AI Engineer devlog"
   },
   "greeting": "무엇이 궁금하신가요?",

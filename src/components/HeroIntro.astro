@@ -19,12 +19,13 @@ interface Landing {
 
 interface Props {
   text: string;
+  endText: string;
   landing: Landing;
   keywords: string[];
   stats: { label: string; value: number }[];
 }
 
-const { text, landing, keywords, stats } = Astro.props;
+const { text, endText, landing, keywords, stats } = Astro.props;
 
 // 장면별 스크롤 구간 [등장 시작, 등장 끝, 퇴장 시작, 퇴장 끝]. 0~1은 랜딩 전체 스크롤 비율입니다.
 const SCENES = {
@@ -58,7 +59,7 @@ const scattered = keywords.map((word, i) => {
 });
 ---
 
-<div class="hero-intro" data-hero-intro data-text={text}>
+<div class="hero-intro" data-hero-intro data-text={endText}>
   <div class="hero-intro__fallback" aria-hidden="true"></div>
   <canvas class="hero-intro__canvas" aria-hidden="true"></canvas>
 
@@ -142,7 +143,7 @@ const scattered = keywords.map((word, i) => {
         </section>
 
         <section class="landing__scene" data-scene={range('end')}>
-          <p class="landing__name landing__name--end" aria-hidden="true">{text}</p>
+          <p class="landing__name landing__name--end" aria-hidden="true">{endText}</p>
           <p class="landing__enter">{landing.enter}</p>
         </section>
 
