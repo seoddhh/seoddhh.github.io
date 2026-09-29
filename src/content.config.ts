@@ -8,7 +8,11 @@ const stripOrderPrefix = (name: string) => name.replace(/\.md$/, '').replace(/^\
 const links = z
   .object({
     github: z.url().optional(),
+    // 레포가 여러 개일 때: 라벨을 붙여 GitHub 칩을 여러 개 표시
+    repos: z.array(z.object({ label: z.string(), url: z.url() })).default([]),
     demo: z.url().optional(),
+    // 유튜브 시연 영상 (youtu.be/ID 또는 youtube.com/watch?v=ID) → 프로젝트 페이지에 임베드
+    video: z.url().optional(),
   })
   .default({});
 

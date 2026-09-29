@@ -16,6 +16,8 @@ const { title, summary, period, role, tags, links } = project.data;
 const chats = await getProjectChats(project.id);
 const { Content } = await render(project);
 const hasBody = Boolean(project.body?.trim());
+// 유튜브 URL에서 영상 ID를 꺼냅니다. (youtu.be/ID, youtube.com/watch?v=ID)
+const videoId = links.video?.match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/)?.[1];
 ---
 
 <AppLayout title={title} description={summary}>
@@ -46,7 +48,7 @@ const hasBody = Boolean(project.body?.trim());
       </dl>
     )}
 
-    {(tags.length > 0 || links.github || links.demo) && (
+    {(tags.length > 0 || links.github || links.repos.length > 0 || links.demo) && (
       <div class="mt-4 flex flex-wrap items-center gap-1.5">
         {tags.map((tag) => <span class="chip">{tag}</span>)}
         {links.github && (
@@ -55,12 +57,32 @@ const hasBody = Boolean(project.body?.trim());
             <span>GitHub</span>
           </a>
         )}
+        {links.repos.map((repo) => (
+          <a href={repo.url} target="_blank" rel="noopener" class="chip gap-1.5 hover:bg-hover hover:text-fg" data-pressable>
+            <Icon name="github" size={14} />
+            <span>{repo.label}</span>
+          </a>
+        ))}
         {links.demo && (
           <a href={links.demo} target="_blank" rel="noopener" class="chip gap-1.5 hover:bg-hover hover:text-fg" data-pressable>
             <Icon name="external-link" size={14} />
             <span>Demo</span>
           </a>
         )}
+      </div>
+    )}
+
+    {videoId && (
+      <div class="mt-6 aspect-video overflow-hidden rounded-xl border border-border bg-surface">
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+          title={`${title} 시연 영상`}
+          class="size-full"
+          loading="lazy"
+          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen
+        ></iframe>
       </div>
     )}
 
