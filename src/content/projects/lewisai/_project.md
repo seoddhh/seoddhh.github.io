@@ -2,7 +2,7 @@
 title: 서울로
 summary: 선택 몇 번으로 시간표까지 완성된 서울 여행 코스를 만들어 주는 지도 서비스 — Next.js 풀스택 웹과 LangGraph RAG 에이전트 서버
 period: 2026-04 ~ 2026-09
-role: 1인 개발(길찾기 제외)
+role: 전체 개발
 tags: [Next.js, TypeScript, LangGraph, RAG, FastAPI, Vercel, Cloud Run]
 links:
   repos:
