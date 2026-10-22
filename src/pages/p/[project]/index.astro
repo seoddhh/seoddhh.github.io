@@ -18,6 +18,8 @@ const { Content } = await render(project);
 const hasBody = Boolean(project.body?.trim());
 // 유튜브 URL에서 영상 ID를 꺼냅니다. (youtu.be/ID, youtube.com/watch?v=ID)
 const videoId = links.video?.match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/)?.[1];
+// 그 외 .mp4 경로는 <video>로 직접 재생합니다.
+const videoFile = links.video?.endsWith('.mp4') ? links.video : undefined;
 ---
 
 <AppLayout title={title} description={summary}>
@@ -83,6 +85,12 @@ const videoId = links.video?.match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/)?.[1];
           referrerpolicy="strict-origin-when-cross-origin"
           allowfullscreen
         ></iframe>
+      </div>
+    )}
+
+    {videoFile && (
+      <div class="mt-6 aspect-video overflow-hidden rounded-xl border border-border bg-surface">
+        <video src={videoFile} title={`${title} 시연 영상`} class="size-full" controls playsinline preload="metadata"></video>
       </div>
     )}
 

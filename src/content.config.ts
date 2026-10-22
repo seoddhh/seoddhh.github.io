@@ -11,8 +11,9 @@ const links = z
     // 레포가 여러 개일 때: 라벨을 붙여 GitHub 칩을 여러 개 표시
     repos: z.array(z.object({ label: z.string(), url: z.url() })).default([]),
     demo: z.url().optional(),
-    // 유튜브 시연 영상 (youtu.be/ID 또는 youtube.com/watch?v=ID) → 프로젝트 페이지에 임베드
-    video: z.url().optional(),
+    // 시연 영상 → 프로젝트 페이지에 임베드
+    // 유튜브 URL(youtu.be/ID, youtube.com/watch?v=ID) 또는 public/ 아래 mp4 경로(/videos/demo.mp4)
+    video: z.string().optional(),
   })
   .default({});
 
